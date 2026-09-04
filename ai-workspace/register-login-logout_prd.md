@@ -1,5 +1,5 @@
 Date created: 2026-09-04
-Date last modified: 2026-09-04 (Phase 2 completed)
+Date last modified: 2026-09-04 (Phase 3 completed)
 
 # Register, Login, and Logout - Technical PRD
 
@@ -323,13 +323,13 @@ The first `npm test` of a phase should fail because the subject does not exist y
 - No SQL string concatenation with user input
 - Passing colocated tests
 
-### Phase 3: Auth route handlers - PLANNED
+### Phase 3: Auth route handlers - COMPLETED
 
 **Objective**: Expose register, login, and logout as HTTP POST endpoints.
 
 **TDD order**: Write handler tests that import `POST` and call it with `new Request(...)`. Mock the user service (and db) so tests never touch D1. Confirm red, then implement routes until green.
 
-Zod is still **not installed**. Confirm with the user before adding it, then validate every body. If Zod is declined, validate with equivalent explicit checks; the tests still require the same 400 shapes.
+Zod is still **not installed**. Phase 3 used explicit request-body checks in `src/app/api/auth/validation.ts` instead of adding a dependency. The 400 shapes match this PRD. Zod can still be added later if approved.
 
 **Tests (write first — expect red)**:
 
@@ -497,6 +497,8 @@ See `src/lib/db.ts`.
 
 Password hashing (Phase 2) lives in `src/lib/password.ts` (`hashPassword` via Web Crypto SHA-256). Persistence lives in `src/lib/services/user-service.ts`. Public `User` never includes the hash; login reads it through `getUserAuthByUsername`. Unique violations throw `UserConflictError`; missing rows on update/delete throw `UserNotFoundError`.
 
+Auth HTTP (Phase 3): `POST /api/auth/register`, `/login`, `/logout`. Bodies are validated in `src/app/api/auth/validation.ts` without Zod. Login compares hashes with `crypto.timingSafeEqual` in `src/app/api/auth/password-compare.ts`. Logout does not call the user service.
+
 ### Important Notes
 
 - D1 is server-only. Never import `src/lib/db.ts` or the user service into a `'use client'` file.
@@ -519,15 +521,15 @@ Password hashing (Phase 2) lives in `src/lib/password.ts` (`hashPassword` via We
 - [ ] Username and email may be the same value and registration still succeeds.
 - [ ] The register POST body contains `passwordHash` and does not contain the plaintext password.
 - [ ] The `users.password_hash` column stores a hash, not the plaintext password.
-- [ ] Duplicate username or duplicate email is rejected with 409 and a clear message.
-- [ ] Invalid register payloads are rejected with 400.
+- [x] Duplicate username or duplicate email is rejected with 409 and a clear message.
+- [x] Invalid register payloads are rejected with 400.
 - [ ] After successful registration the teacher is taken to `/mcqs`.
 - [ ] A registered teacher can log in with username and password and is taken to `/mcqs`.
-- [ ] Wrong password or unknown username returns 401 with `"Invalid username or password."` and does not distinguish which failed.
+- [x] Wrong password or unknown username returns 401 with `"Invalid username or password."` and does not distinguish which failed.
 - [ ] Login POST body contains `passwordHash` and does not contain the plaintext password.
 - [ ] Logout from `/mcqs` calls `POST /api/auth/logout` and then navigates to `/login`.
 - [ ] `/mcqs` is a stub only: no MCQ create/edit/list behavior.
-- [ ] API responses never include `password_hash`.
+- [x] API responses never include `password_hash`.
 - [x] User service can create, update, and delete users (update/delete need not have UI or HTTP routes).
 - [x] Vitest is installed; `npm test` runs the suite.
 - [ ] Each implementation phase was developed test-first: tests existed and failed before the phase's production code made them pass.
@@ -669,6 +671,6 @@ When working with this PRD:
 ## Current Status
 
 **Last Updated**: 2026-09-04
-**Current Phase**: Phase 3 - Auth route handlers
-**Status**: Phase 2 COMPLETED; waiting for review before Phase 3
-**Next Steps**: After review, write Phase 3 Vitest tests for register/login/logout routes, confirm red, then implement until green. Confirm Zod before adding it.
+**Current Phase**: Phase 4 - UI pages and navigation
+**Status**: Phase 3 COMPLETED; waiting for review before Phase 4
+**Next Steps**: After review, write Phase 4 Vitest tests for register/login/logout UI, confirm red, then implement until green.
