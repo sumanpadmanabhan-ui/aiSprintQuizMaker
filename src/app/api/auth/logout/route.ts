@@ -1,3 +1,3 @@
-export async function POST(_request: Request): Promise<Response> {
+export async function POST(): Promise<Response> {
 	return Response.json({ ok: true });
 }

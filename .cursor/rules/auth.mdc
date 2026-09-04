@@ -1,0 +1,40 @@
+---
+description: Teacher identity layer — register, login, logout, users table, no sessions
+globs: src/app/api/auth/**,src/components/login-form.tsx,src/components/signup-form.tsx,src/components/logout-button.tsx,src/lib/password.ts,src/lib/services/user-service.ts,src/lib/db.ts
+alwaysApply: false
+---
+
+# Auth and users (this sprint is done)
+
+Identity is implemented. Do not re-open this design unless a new PRD says so.
+Source of truth: `ai-workspace/register-login-logout_prd.md`.
+
+## What exists
+
+- D1 `users` table. Public type `User` has no password hash.
+- Client hashes with `hashPassword` in `src/lib/password.ts` (SHA-256 hex).
+- POST `/api/auth/register` (201), `/api/auth/login` (200), `/api/auth/logout` (200 `{ ok: true }`).
+- Bodies send `passwordHash` only. A `password` field is a 400.
+- Login identifier is **username**, not email. Username and email may be the same value.
+- `/mcqs` is an ungated stub. Logout does not revoke anything server-side.
+
+## Do not add without a new PRD
+
+- Social login, JWT/tokens, cookies, `Set-Cookie`, server sessions, route guards
+- Password reset, MFA, roles, email verification
+- Changing SHA-256 to bcrypt/Argon2 (teaching baseline; replace only when scoped)
+- Importing `src/lib/db.ts` or `user-service.ts` into a `'use client'` file
+
+## When adding MCQs
+
+- New tables go in a new migration. Foreign-key `users.id`.
+- Keep prepared statements and numbered placeholders (`?1`, `?2`).
+- Mock `@/lib/db` in unit tests. Do not hit real D1. Do not add
+  `@cloudflare/vitest-pool-workers` without asking.
+- `npm test` is already wired. Write tests first.
+
+## Login 401
+
+Unknown user and hash mismatch both return exactly `"Invalid username or password."`
+Login still runs a hash compare when the user is missing (dummy `"0".repeat(64)`) so
+timing is less of a tell.

@@ -5,13 +5,7 @@ agent conversation, so it describes only what is stable and true of the project.
 
 ## Project
 
-<!--
-Replace this section during Sprint 1 with a short description of what you are building:
-the problem, the primary user, and the current state. Two or three sentences.
-Keep it current. An out-of-date description here misleads every future conversation.
--->
-
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The current sprint is register/login/logout only (no MCQ authoring yet). Phases 1–4 are done: D1, user service, auth APIs, and shadcn login/register/MCQ-stub UI. The technical PRD in `ai-workspace/register-login-logout_prd.md` is the source of truth for the current phase.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register plus an ungated `/mcqs` stub. There is **no session or token**; `/mcqs` is not gated. Next product work is the MCQ test-bank sprint — write a new technical PRD before implementing it. Identity details live in `ai-workspace/register-login-logout_prd.md`.
 
 ## Stack
 
@@ -24,17 +18,20 @@ Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple
 - **Cloudflare D1** for persistence (binding `DB`, local migrations only)
 - **Vitest** for unit tests (`npm test`)
 
-Authentication and an AI SDK are not installed yet. Do not write code that imports
-an uninstalled package without adding it first and telling the user.
+There is no session library, AI SDK, or Zod. Do not write code that imports an
+uninstalled package without adding it first and telling the user. Auth uses explicit
+validation in `src/app/api/auth/validation.ts`, not Zod.
 
 ## Layout
 
 ```
 src/app/            Routes, layouts, and global styles (App Router)
+src/app/api/auth/   Register, login, logout HTTP POST handlers
 src/components/ui/  shadcn/ui components (generated; avoid hand-editing)
-src/lib/            Shared utilities and services
+src/lib/            Shared utilities (`db.ts`, `password.ts`)
+src/lib/services/   Domain services (`user-service.ts`)
 ai-workspace/       Technical PRDs and planning documents
-.cursor/rules/      File-scoped conventions
+.cursor/rules/      File-scoped conventions (including `auth.mdc`, `d1.mdc`)
 .cursor/skills/     Task-specific guidance loaded on demand
 public/             Static assets
 ```
@@ -67,8 +64,10 @@ anything runtime-sensitive with `npm run preview`.
 - **Keep secrets out of the repo.** Local values belong in `.dev.vars`, which is
   gitignored. When adding a variable, also add an empty placeholder to
   `.dev.vars.example`. Production values go in `wrangler secret put`.
-- **Verify before claiming completion.** Run `npm run lint` and `npm run build` and
-  report the actual result. Do not describe work as done based on inspection alone.
+- **Verify before claiming completion.** Run `npm test`, `npm run lint`, and
+  `npm run build` and report the actual result. Do not describe work as done based
+  on inspection alone. Do not run those three in parallel on a memory-constrained
+  Windows machine — Vitest has OOMed when overlapped with `next build`.
 - **Say when you are unsure.** A flagged uncertainty is more useful than a confident
   guess that has to be unwound later.
 

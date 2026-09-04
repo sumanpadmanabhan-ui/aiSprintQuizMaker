@@ -9,13 +9,29 @@ paths:
 
 # Testing with Vitest
 
-Vitest is **not installed in this starter**. Set it up the first time tests are needed.
+Vitest **is installed**. Run `npm test` (`vitest run`) or `npm run test:watch`.
+Do not reinstall the harness. Do not bump to Vitest 4 or `@vitejs/plugin-react@6`
+without asking: plugin-react 6 pulled Babel 8 and conflicted with this repo's Babel 7.
+
+Pinned versions that work here:
+
+- `vitest@3.2.4`
+- `@vitejs/plugin-react@4.5.2`
+- `@testing-library/react@16.3.0`
+- `@testing-library/user-event@14.6.1`
+- `jsdom@26.1.0`
+- `vite-tsconfig-paths@5.1.4`
+
+`@testing-library/jest-dom` is **not** installed. Do not use `toHaveTextContent` or
+other jest-dom matchers; assert `.textContent` (or roles) instead.
+
+If a corporate npm registry hangs, install from the public registry:
 
 ```bash
-npm install -D vitest @vitejs/plugin-react @testing-library/react jsdom vite-tsconfig-paths
+npm install -D <packages> --registry https://registry.npmjs.org
 ```
 
-Add a `vitest.config.ts` at the repo root:
+Existing `vitest.config.ts`:
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -34,7 +50,7 @@ export default defineConfig({
 `vite-tsconfig-paths` is what makes the `@/` alias resolve in tests. Without it every
 import of `@/lib/...` fails.
 
-Then add the scripts:
+Scripts already in `package.json`:
 
 ```json
 "test": "vitest run",
@@ -71,11 +87,14 @@ beforeEach(() => {
 Mock at the module boundary with `vi.mock`. Never let a unit test reach a real network
 service, a real database, or a real model provider.
 
-Server-only modules need stubbing before they can be imported in a test:
+`server-only` is **not** installed in this repo. `src/lib/db.ts` does not import it.
+If a later module adds `server-only`, stub it before importing that module:
 
 ```ts
 vi.mock("server-only", () => ({}));
 ```
+
+Prefer mocking `@/lib/db` at the module boundary for user-service and similar tests.
 
 ## Testing code that touches Cloudflare bindings
 
@@ -111,3 +130,7 @@ models real interaction more faithfully.
 
 Server Components cannot be rendered by Testing Library. Test their data-fetching logic
 directly as plain functions, and reserve component rendering for client components.
+
+Auth forms hash with `crypto.subtle` then `fetch`. Assert with `waitFor` after submit;
+do not expect `fetch` synchronously in the same tick as the click. Mock `next/navigation`
+(`useRouter` / `router.push`) in form tests.

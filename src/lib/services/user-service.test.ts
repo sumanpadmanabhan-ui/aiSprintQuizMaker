@@ -41,7 +41,7 @@ function createStatement(options?: {
 	allError?: Error;
 }) {
 	const statement = {
-		bind: vi.fn((..._args: unknown[]) => statement),
+		bind: vi.fn(() => statement),
 		all: vi.fn(async () => {
 			if (options?.allError) {
 				throw options.allError;

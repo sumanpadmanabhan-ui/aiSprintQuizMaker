@@ -6,14 +6,20 @@ alwaysApply: false
 
 # Cloudflare D1
 
-D1 is Cloudflare's SQLite database. **This starter has no D1 database configured yet.**
-The conventions below apply once one is added, and describe how to add it.
+D1 is Cloudflare's SQLite database. This project already has one: database name
+`quiz-maker`, binding `DB`, accessed through `getDb()` in `src/lib/db.ts`.
+The first table is `users` (`migrations/0001_create_users.sql`). Future MCQ tables
+must live in a new migration and should foreign-key `users.id`.
 
-## Adding D1 to the project
+`wrangler.jsonc` may still contain placeholder `database_id` `local-dev-quiz-maker`
+if remote create was not committed. Do not invent a UUID. Do not overwrite a real
+UUID if one is already present.
+
+## Adding another D1 database (unusual — ask first)
 
 1. Create the database: `npx wrangler d1 create <name>`
-2. Add the returned `d1_databases` block to `wrangler.jsonc` with binding `DB`.
-3. Run `npm run cf-typegen` so `env.DB` becomes typed.
+2. Add the returned `d1_databases` block to `wrangler.jsonc` with a distinct binding.
+3. Run `npm run cf-typegen` so the binding becomes typed.
 
 ## Access
 

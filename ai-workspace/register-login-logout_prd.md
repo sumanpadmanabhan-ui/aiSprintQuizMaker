@@ -1,7 +1,12 @@
 Date created: 2026-09-04
-Date last modified: 2026-09-04 (Phase 4 completed)
+Date last modified: 2026-09-04 (Phase 5 completed — identity sprint done)
 
 # Register, Login, and Logout - Technical PRD
+
+> **Sprint status:** COMPLETE. Phases 1–5 are done. Do not implement more identity
+> features from this document. The next product sprint is MCQ authoring; write a
+> **new** technical PRD for that work. Keep using this file as the identity contract
+> (schema, APIs, hashing, no sessions).
 
 ## Overview/Problem
 
@@ -94,7 +99,7 @@ Do not run `migrations apply` with `--remote`. After the `d1_databases` block is
 
 Route handlers live under `src/app/api/`. This is an explicit exception to the usual "prefer Server Actions" convention: the product requirement is HTTP POST for register, login, and logout.
 
-All mutating routes validate the JSON body with Zod before calling the user service. Treat every field as untrusted.
+All mutating routes validate the JSON body **before** calling the user service. Treat every field as untrusted. Zod was proposed and **was not installed**. Validation lives in `src/app/api/auth/validation.ts` (`parseRegisterBody`, `parseLoginBody`, `RequestValidationError`). Ask before adding Zod.
 
 #### POST /api/auth/register
 
@@ -374,13 +379,13 @@ Zod is still **not installed**. Phase 3 used explicit request-body checks in `sr
 | `src/app/api/auth/login/route.test.ts` | Invalid body → 400. |
 | `src/app/api/auth/logout/route.test.ts` | POST → 200 `{ "ok": true }`. User service is **not** called (`expect(mockCreate).not.toHaveBeenCalled()` or equivalent). |
 
-**Implementation (make green)**:
+**Implementation (make green)** — what actually shipped:
 
-1. Confirm Zod (or the agreed alternative), then schema-validate every body.
-2. Implement `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`.
+1. Explicit validation in `src/app/api/auth/validation.ts` (no Zod).
+2. `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`.
 3. Register and login call the user service only. Logout does not.
-4. Strip `password_hash` from every JSON response.
-5. Use identical 401 messaging for unknown user and bad hash. Compare hashes with `crypto.timingSafeEqual` after length checks.
+4. Strip `password_hash` from every JSON response via `toPublicUser`.
+5. Identical 401 messaging. Compare hashes with `timingSafeEqual` after length checks (`src/app/api/auth/password-compare.ts`). When the user is missing, still compare against dummy `"0".repeat(64)` so a missing user is not a fast-path skip.
 
 **Phase-complete signal**: `npm test` green including all auth `route.test.ts` files.
 
@@ -427,32 +432,29 @@ Zod is still **not installed**. Phase 3 used explicit request-body checks in `sr
 - Redirects: register/login → `/mcqs`; logout → `/login`
 - Passing component tests
 
-### Phase 5: Verification - PLANNED
+### Phase 5: Verification - COMPLETED
 
 **Objective**: Prove the whole feature works: full Vitest suite, lint, build, and browser.
 
-**TDD order**: Do **not** add a new red suite here unless a gap appeared. Run the existing suite as the regression signal. If a browser bug is found, add a failing unit test that reproduces it (red), fix it (green), then re-verify in the browser.
+**TDD order**: No new red suite unless a gap appeared. The existing suite is the regression signal.
 
-**Tests (run first — expect green; add only if something is missing)**:
+**Command results recorded 2026-09-04 (run separately — not in parallel):**
 
-| Command / file | Behavior to prove |
-|----------------|-------------------|
-| `npm test` | Entire suite from Phases 1–4 stays green. Any new bug-repro test starts red, then is made green. |
+| Command | Result |
+|---------|--------|
+| `npm test` | **41 passed / 10 files**, Vitest 3.2.4, exit 0. First attempt that overlapped `lint` + `build` OOMed (`fatal error: runtime: cannot allocate memory`) and reported 10 failed files with no tests collected. Re-ran `npm test` alone; that run is the recorded result. |
+| `npm run lint` | **exit 0**. Two `@typescript-eslint/no-unused-vars` warnings (`logout` unused request param, test `bind` unused rest args) were then removed. ESLint does **not** ignore `_prefixed` unused args in this config — omit the parameter instead. |
+| `npm run build` | **exit 0**. Next.js 16.2.12 Turbopack. Routes: `/`, `/login`, `/register`, `/mcqs` (static); `/api/auth/register`, `/login`, `/logout` (dynamic). |
+| Browser | User confirmed the app works **locally and after deploy** (register / login / logout happy path). |
 
-**Implementation / verification**:
-
-1. Run `npm test`, `npm run lint`, and `npm run build` and record the actual result of each.
-2. In the browser, exercise register, duplicate username/email, login success, login failure, and logout end to end.
-3. Confirm local D1 data contains hashes, not plaintext.
-4. Prefer `npm run preview` for D1-backed routes (Node `npm run dev` will not catch Workers-only issues).
-
-**Phase-complete signal**: `npm test` green; lint and build reported from the commands; browser happy path and main error paths verified.
+**Phase-complete signal**: Suite green; lint and build from the commands; user-verified browser (local + deployed).
 
 **Deliverables**:
 
-- Full Vitest suite green
-- Lint and build results from the commands, not from inspection
-- Browser-verified happy path and main error paths
+- Full Vitest suite green (41 tests)
+- Lint and build results from the commands
+- Browser-verified happy path (user)
+- This PRD, `AGENTS.md`, and Cursor rules/skills updated for the next sprint
 
 ---
 
@@ -462,99 +464,160 @@ Zod is still **not installed**. Phase 3 used explicit request-body checks in `sr
 
 | Path | Purpose |
 |------|---------|
-| `wrangler.jsonc` | Add D1 `DB` binding |
-| `migrations/` | `users` table DDL |
-| `src/lib/db.ts` | Server-only access to `env.DB` |
-| `src/lib/password.ts` | SHA-256 hex helper (client- and server-safe) |
-| `src/lib/services/user-service.ts` | Create, update, delete, and lookup users |
-| `src/app/api/auth/register/route.ts` | `POST` register |
-| `src/app/api/auth/login/route.ts` | `POST` login |
-| `src/app/api/auth/logout/route.ts` | `POST` logout |
-| `src/app/page.tsx` | Landing |
-| `src/app/register/page.tsx` | Register form |
-| `src/app/login/page.tsx` | Login form |
-| `src/app/mcqs/page.tsx` | MCQ stub |
-| `src/components/login-form.tsx` | shadcn login block, adapted for username + hashed POST |
-| `src/components/signup-form.tsx` | shadcn signup block, adapted for register fields + hashed POST |
-| `src/components/logout-button.tsx` | Logout control on the MCQ stub |
+| `wrangler.jsonc` | D1 binding `DB`, database `quiz-maker`. May still use placeholder `database_id` `local-dev-quiz-maker` in git; do not overwrite a real UUID if one is present. |
+| `migrations/0001_create_users.sql` | `users` table DDL |
+| `src/lib/db.ts` | `getDb()` → `env.DB` via `getCloudflareContext({ async: true })` |
+| `src/lib/password.ts` | SHA-256 hex helper (safe in client components) |
+| `src/lib/services/user-service.ts` | create / update / delete / lookup; `User` vs `UserAuth` |
+| `src/app/api/auth/validation.ts` | Request-body checks (no Zod) |
+| `src/app/api/auth/password-compare.ts` | `timingSafeEqual` after length check |
+| `src/app/api/auth/register/route.ts` | `POST` register → 201 `{ user }` |
+| `src/app/api/auth/login/route.ts` | `POST` login → 200 `{ user }` or 401 |
+| `src/app/api/auth/logout/route.ts` | `POST` logout → `{ ok: true }` (no DB) |
+| `src/app/page.tsx` | Landing with Register / Log in |
+| `src/app/register/page.tsx` | shadcn block wrapper + `SignupForm` |
+| `src/app/login/page.tsx` | shadcn block wrapper + `LoginForm` |
+| `src/app/mcqs/page.tsx` | Ungated stub + `LogoutButton` |
+| `src/components/login-form.tsx` | Username + password; hash then `fetch` |
+| `src/components/signup-form.tsx` | Register fields; hash then `fetch` |
+| `src/components/logout-button.tsx` | POST logout then always `router.push("/login")` |
 | `src/components/ui/` | shadcn primitives — do not hand-edit |
-| `vitest.config.ts` | Vitest + `@/` path resolution |
-| `src/lib/*.test.ts` | Unit tests colocated with schema, db, password, user service |
-| `src/app/api/auth/**/route.test.ts` | Route-handler tests |
-| `src/components/*.test.tsx` | Client form and logout tests |
+| `vitest.config.ts` | jsdom, globals, `vite-tsconfig-paths` for `@/` |
+| colocated `*.test.ts(x)` | 10 files / 41 tests |
 
-### Implementation Patterns
+App Router pages (as of `next build`): `/`, `/login`, `/register`, `/mcqs`, plus the three auth APIs.
 
-Client submit (register and login):
+### Database access
+
+`server-only` is **not** installed. `getDb` does not import it. Never import this module from `'use client'` files.
+
+```typescript
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+export async function getDb(): Promise<D1Database> {
+  const { env } = await getCloudflareContext({ async: true });
+  if (!env.DB) {
+    throw new Error("D1 binding DB is not configured");
+  }
+  return env.DB;
+}
+```
+
+### Password hashing (client-safe)
+
+```typescript
+export async function hashPassword(plaintext: string): Promise<string> {
+  const data = new TextEncoder().encode(plaintext);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+```
+
+### User service contract
+
+- Public `User`: `id`, `firstName`, `lastName`, `username`, `email` (no hash).
+- `UserAuth`: `id`, `passwordHash` — login only, via `getUserAuthByUsername`.
+- Username and email stored **lowercase** (`trim` + `toLowerCase`).
+- `createUser` INSERT uses `RETURNING` + `all()` / `results[0]` (not `first()`).
+- Unique violations → `UserConflictError` with `field: "username" | "email" | "unknown"` (regex on D1 message: `users.username` / `users.email`).
+- Missing row on update/delete → `UserNotFoundError`.
+- Prepared statements with numbered placeholders `?1`, `?2`.
+
+```typescript
+const { results } = await db
+  .prepare(
+    `INSERT INTO users (first_name, last_name, username, email, password_hash)
+     VALUES (?1, ?2, ?3, ?4, ?5)
+     RETURNING id, first_name, last_name, username, email`,
+  )
+  .bind(firstName, lastName, username, email, input.passwordHash)
+  .all<UserRow>();
+```
+
+### Auth HTTP
+
+Validation helpers (not Zod): `readJsonBody`, `parseRegisterBody`, `parseLoginBody`, `toPublicUser`, `INVALID_CREDENTIALS = "Invalid username or password."`. Reject a body that contains `password`. `passwordHash` must match `/^[a-f0-9]{64}$/i`.
+
+Login compare:
+
+```typescript
+const auth = await getUserAuthByUsername(input.username);
+const storedHash = auth?.passwordHash ?? "0".repeat(64);
+const hashesMatch = passwordHashesEqual(storedHash, input.passwordHash);
+if (!auth || !hashesMatch) {
+  return Response.json({ error: INVALID_CREDENTIALS }, { status: 401 });
+}
+```
+
+`passwordHashesEqual` uses `timingSafeEqual` from `node:crypto` after confirming equal byte lengths (`nodejs_compat` is on in `wrangler.jsonc`).
+
+Logout:
+
+```typescript
+export async function POST(): Promise<Response> {
+  return Response.json({ ok: true });
+}
+```
+
+Error JSON shape: `{ error: string }`. Success register/login: `{ user: User }`.
+
+### Client submit
+
+Register (`SignupForm`):
 
 ```typescript
 const passwordHash = await hashPassword(password);
 const response = await fetch("/api/auth/register", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    firstName,
-    lastName,
-    username,
-    email,
-    passwordHash,
-  }),
+  body: JSON.stringify({ firstName, lastName, username, email, passwordHash }),
 });
+if (response.status === 201) router.push("/mcqs");
 ```
 
-User service create (illustrative):
+Login uses `POST /api/auth/login` with `{ username, passwordHash }` and `router.push("/mcqs")` on 200.
 
-```typescript
-await db
-  .prepare(
-    `INSERT INTO users (first_name, last_name, username, email, password_hash)
-     VALUES (?1, ?2, ?3, ?4, ?5)`,
-  )
-  .bind(firstName, lastName, username, email, passwordHash)
-  .run();
+Logout always navigates even if `fetch` throws.
+
+Page wrappers:
+
+```tsx
+<div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+  <div className="w-full max-w-sm">
+    <LoginForm /> {/* or <SignupForm /> */}
+  </div>
+</div>
 ```
 
-Prefer `all()` and `results[0]` over `first()` when reading a row, per D1 conventions.
+### Vitest harness (already installed)
 
-Database access (Phase 1):
-
-```typescript
-export async function getDb(): Promise<D1Database> {
-  const { env } = await getCloudflareContext({ async: true });
-  return env.DB;
-}
-```
-
-See `src/lib/db.ts`.
-
-Password hashing (Phase 2) lives in `src/lib/password.ts` (`hashPassword` via Web Crypto SHA-256). Persistence lives in `src/lib/services/user-service.ts`. Public `User` never includes the hash; login reads it through `getUserAuthByUsername`. Unique violations throw `UserConflictError`; missing rows on update/delete throw `UserNotFoundError`.
-
-Auth HTTP (Phase 3): `POST /api/auth/register`, `/login`, `/logout`. Bodies are validated in `src/app/api/auth/validation.ts` without Zod. Login compares hashes with `crypto.timingSafeEqual` in `src/app/api/auth/password-compare.ts`. Logout does not call the user service.
-
-UI (Phase 4): shadcn Login and Signup blocks, adapted. Pages at `/login` and `/register` use the block layout. `SignupForm` / `LoginForm` hash then `fetch`. Google and forgot-password were omitted. `/mcqs` is a stub with `LogoutButton`.
+Pinned: `vitest@3.2.4`, `@vitejs/plugin-react@4.5.2` (do **not** bump plugin-react to 6 — Babel 8 vs this repo's Babel 7). `vite-tsconfig-paths` required for `@/`. `@testing-library/jest-dom` is **not** installed — assert `.textContent`, not `toHaveTextContent`. Form tests need `waitFor` after submit because hashing is async. Mock `@/lib/db` (not real D1). `server-only` is not a dependency; do not add a mock for it unless a later module imports it.
 
 ### Important Notes
 
 - D1 is server-only. Never import `src/lib/db.ts` or the user service into a `'use client'` file.
 - `getCloudflareContext()` is the only way to reach `env.DB`. There is no global `env`.
-- `npm run dev` runs on Node and will not catch Workers-only D1 issues. Prefer `npm run preview` when verifying database-backed routes.
-- **Vitest is approved.** Follow `.cursor/skills/testing/SKILL.md`. Ask before adding Zod (planned for body validation) or any other new dependency.
-- Each phase starts with failing tests. Do not implement production code for a phase until that phase's tests exist and have been observed red.
-- Mock D1 and Cloudflare context. Do not introduce `@cloudflare/vitest-pool-workers` without asking.
-- Remote D1 was not created in Phase 1 (`wrangler whoami` was unauthenticated). `wrangler.jsonc` uses placeholder `database_id` `local-dev-quiz-maker`. After `npx wrangler login`, run `npx wrangler d1 create quiz-maker` and replace that id. Do not apply migrations with `--remote` unless asked.
-- Do not deploy. Do not apply migrations remotely.
-- SHA-256 is fast and unsalted. It is a teaching baseline, not production-grade password storage. HTTPS in production still matters; hashing here mainly keeps plaintext out of JSON bodies and the `users` table.
-- Because there is no session, "logged in" is only a client navigation to `/mcqs`. The next sprint that needs a current user must add a real session or token design.
+- `npm run dev` runs on Node and will not catch Workers-only D1 issues. Prefer `npm run preview` for Workers-sensitive checks.
+- Ask before adding Zod, a session library, an AI SDK, or any other new dependency.
+- Mock D1. Do not introduce `@cloudflare/vitest-pool-workers` without asking.
+- Agents must not run `npm run deploy` unless the user asks. The user has already deployed this sprint successfully.
+- Agents must not apply D1 migrations with `--remote` unless the user asks. Local apply: `npx wrangler d1 migrations apply quiz-maker --local`. If Wrangler prompts in a non-interactive shell, `CI=true` can skip the confirmation.
+- SHA-256 is unsalted and fast. It is a teaching baseline. The client hash **is** the stored secret, so a leaked `password_hash` is reusable as a login credential.
+- Because there is no session, "logged in" is only a client navigation to `/mcqs`. Direct visits to `/mcqs` are allowed. A later sprint that needs a current user must add a real session or token **in a new PRD**.
+- Corporate npm (`nexus.releng.pearsondev.com`) has hung during installs. Use `--registry https://registry.npmjs.org` if that happens.
+- Do not run `npm test`, `npm run lint`, and `npm run build` at the same time on a memory-constrained Windows box.
 
 ---
 
 ## Acceptance Criteria
 
 - [x] A local D1 database exists, `DB` is bound, and the `users` migration is applied locally.
-- [ ] A teacher can register with first name, last name, username, email, and password.
-- [ ] Username and email may be the same value and registration still succeeds.
+- [x] A teacher can register with first name, last name, username, email, and password. (unit tests + user local/deploy)
+- [x] Username and email may be the same value and registration still succeeds. (unit tests + user)
 - [x] The register POST body contains `passwordHash` and does not contain the plaintext password.
-- [ ] The `users.password_hash` column stores a hash, not the plaintext password.
+- [x] The `users.password_hash` column stores a hash, not the plaintext password. (service persists the 64-char hex the client sent; no plaintext column)
 - [x] Duplicate username or duplicate email is rejected with 409 and a clear message.
 - [x] Invalid register payloads are rejected with 400.
 - [x] After successful registration the teacher is taken to `/mcqs`.
@@ -566,9 +629,9 @@ UI (Phase 4): shadcn Login and Signup blocks, adapted. Pages at `/login` and `/r
 - [x] API responses never include `password_hash`.
 - [x] User service can create, update, and delete users (update/delete need not have UI or HTTP routes).
 - [x] Vitest is installed; `npm test` runs the suite.
-- [ ] Each implementation phase was developed test-first: tests existed and failed before the phase's production code made them pass.
-- [x] `npm test` is green for schema/db, password, user service, auth routes, and client auth components.
-- [ ] `npm run lint` and `npm run build` succeed after implementation.
+- [x] Each implementation phase was developed test-first: tests existed and failed before the phase's production code made them pass.
+- [x] `npm test` is green for schema/db, password, user service, auth routes, and client auth components (41 tests).
+- [x] `npm run lint` and `npm run build` succeed after implementation (exit 0, 2026-09-04).
 
 ---
 
@@ -589,10 +652,10 @@ UI (Phase 4): shadcn Login and Signup blocks, adapted. Pages at `/login` and `/r
 
 ### External Dependencies
 
-- **Cloudflare D1** — user persistence. Must be created and bound as `DB`.
+- **Cloudflare D1** — bound as `DB`, database name `quiz-maker`, table `users`.
 - **Web Crypto (`crypto.subtle`)** — SHA-256 in the browser and on Workers. Already available; not an npm package.
-- **Zod** (proposed, not installed) — request-body validation in route handlers. Confirm before adding.
-- **Vitest** (approved) — unit tests. Install at the start of Phase 1 with `@vitejs/plugin-react`, `@testing-library/react`, `@testing-library/user-event`, `jsdom`, and `vite-tsconfig-paths`.
+- **Zod** (proposed, **not installed**) — do not add without asking. Auth uses `src/app/api/auth/validation.ts`.
+- **Vitest** (installed) — `npm test`. Pin `vitest@3.2.4` + `@vitejs/plugin-react@4.5.2`. See `.cursor/skills/testing/SKILL.md`.
 
 ### Internal Dependencies
 
@@ -642,8 +705,6 @@ No new environment secrets are required for this phase (no OAuth, no JWT signing
 
 ## Troubleshooting Guide
 
-Populate this section as issues are found during implementation. Starters:
-
 ### D1 binding missing at runtime
 
 **Problem**: `env.DB` is undefined or TypeScript does not know `DB`.
@@ -655,56 +716,88 @@ Populate this section as issues are found during implementation. Starters:
 
 **Problem**: `no such table: users`.
 **Cause**: Migration created but not applied with `--local`, or preview is using a different local D1 state.
-**Solution**: `npx wrangler d1 migrations apply quiz-maker --local`. Never use `--remote`.
+**Solution**: `npx wrangler d1 migrations apply quiz-maker --local`. Never use `--remote` unless the user asks. Non-interactive shells: prefix with `CI=true` if Wrangler waits for confirmation.
 
 ### Unique constraint becomes a 500
 
 **Problem**: Registering an existing username returns 500 instead of 409.
 **Cause**: D1 error not mapped in the user service.
-**Solution**: Detect the constraint failure and throw a conflict error the route handler converts to 409.
+**Solution**: `asConflictError` in `user-service.ts` looks for `/unique constraint/i` and `users.username` / `users.email`. Keep that mapping if D1 error text changes.
 
-### Wrangler not authenticated
+### Wrangler not authenticated / placeholder database_id
 
-**Problem**: `npx wrangler d1 create quiz-maker` cannot run; `database_id` is a local placeholder.
-**Cause**: `wrangler whoami` reports not authenticated.
-**Solution**: Run `npx wrangler login` locally, then `npx wrangler d1 create quiz-maker`, put the returned UUID in `wrangler.jsonc`, and run `npm run cf-typegen`. Apply migrations with `--local` only unless the user explicitly asks for remote.
+**Problem**: `npx wrangler d1 create quiz-maker` cannot run; `database_id` in git is `local-dev-quiz-maker`.
+**Cause**: Phase 1 ran without `wrangler login`. Local D1 still works with the placeholder.
+**Solution**: The user later deployed successfully, so a real remote DB may exist in the Cloudflare account even if git still has the placeholder. Do not invent a UUID. If `wrangler.jsonc` still says `local-dev-quiz-maker` and remote ops fail, the user should `npx wrangler login`, `npx wrangler d1 create quiz-maker` (or list existing), put the UUID in `wrangler.jsonc`, and run `npm run cf-typegen`. Apply new migrations `--local` unless they ask for `--remote`.
 
 ### `@/` imports fail in Vitest
 
 **Problem**: Tests cannot resolve `@/lib/...`.
 **Cause**: `vite-tsconfig-paths` missing from `vitest.config.ts`.
-**Solution**: Add it as in `.cursor/skills/testing/SKILL.md`.
+**Solution**: Keep `tsconfigPaths()` in `vitest.config.ts`.
 
 ### `getCloudflareContext` blows up in tests
 
 **Problem**: jsdom tests throw when importing db/user-service.
 **Cause**: Real OpenNext context is not available in Vitest.
-**Solution**: `vi.mock("@opennextjs/cloudflare")` (and/or mock `src/lib/db`) and supply a fake `env.DB`.
+**Solution**: Mock `@/lib/db` (`vi.mock("@/lib/db")`) for user-service tests. `db.test.ts` mocks `@opennextjs/cloudflare`.
+
+### Vitest OOM / "10 failed" with no tests collected
+
+**Problem**: `fatal error: runtime: cannot allocate memory` or test files fail during collect.
+**Cause**: `npm test` overlapping `npm run lint` and `npm run build` on Windows.
+**Solution**: Run them one at a time.
+
+### npm install hangs
+
+**Problem**: `npm install` never finishes (corporate Nexus registry).
+**Cause**: `nexus.releng.pearsondev.com` timeout.
+**Solution**: `npm install … --registry https://registry.npmjs.org`
+
+### `@vitejs/plugin-react@6` / Vitest 4 install fails
+
+**Problem**: Peer/Babel conflict during install.
+**Cause**: plugin-react 6 wants Babel 8; this repo still has Babel 7.
+**Solution**: Stay on `vitest@3.2.4` and `@vitejs/plugin-react@4.5.2`.
+
+### jest-dom matcher missing
+
+**Problem**: `toHaveTextContent is not a function`.
+**Cause**: `@testing-library/jest-dom` is not installed.
+**Solution**: Assert `element.textContent` or add the matcher only after asking.
 
 ---
 
 ## Notes for AI Agents
 
-When working with this PRD:
+This identity sprint is **done**. When you are in a later conversation:
 
-1. Start from Overview and Hypothesis so the work stays about teacher identity, not MCQs.
-2. Honor Scope (In / Out / Cut). Do not add social login, tokens, cookies, sessions, or MCQ CRUD.
-3. **Work test-first.** For each phase: write the listed Vitest tests, run `npm test` and confirm red, implement, run `npm test` until green. Do not skip the red step. Do not start the next phase while the current phase's tests are red.
-4. Follow `.cursor/skills/testing/SKILL.md` (colocation, `vi.mock`, no real D1, Testing Library for client UI).
-5. Update phase status markers (`PLANNED` → `IN PROGRESS` → `COMPLETED`) as work proceeds.
-6. Record real file paths and patterns under Technical Implementation Details once code exists.
-7. Check off Acceptance Criteria only when tests are green and behavior is verified (lint, build, and browser), not when the file merely exists.
-8. Add Troubleshooting entries when a bug is found and fixed.
-9. Vitest is approved. Ask before adding Zod or any other new dependency. Do not add `@cloudflare/vitest-pool-workers` without asking.
-10. Never deploy. Never apply D1 migrations remotely.
-11. Cite code as `filepath:line-number`.
-12. Keep this document current; remove stale instructions rather than stacking contradictions.
+1. Do **not** add social login, tokens, cookies, sessions, password reset, MFA, roles, or MCQ CRUD from this PRD. MCQ work needs a **new** PRD.
+2. Honor the identity contract: `passwordHash` on the wire, SHA-256 client hash, username login, username may equal email, identical 401 message, no hash in JSON, `/mcqs` ungated.
+3. Future MCQ tables: new migration, FK `users.id`, prepared statements, `?1`/`?2`, `all()`/`results[0]`.
+4. Keep TDD: write Vitest tests first, observe red, then implement. Follow `.cursor/skills/testing/SKILL.md`. Mock `@/lib/db`. Ask before `@cloudflare/vitest-pool-workers`.
+5. Ask before adding Zod, session libraries, AI SDK, or other dependencies. `server-only` is not installed.
+6. Never run `npm run deploy` unless asked. Never apply D1 `--remote` unless asked.
+7. File-scoped rules: `.cursor/rules/auth.mdc`, `.cursor/rules/d1.mdc`, `.cursor/rules/nextjs.mdc` (auth is an HTTP-POST exception; Zod is not required yet).
+8. Cite code as `filepath:line-number`. Keep this document current; remove stale instructions rather than stacking contradictions.
+
+---
+
+## Handoff: next sprint (MCQ test bank)
+
+Write `ai-workspace/` a new technical PRD before coding questions. Starting points that must stay true:
+
+- Teachers already have accounts. Do not rebuild register/login.
+- There is **no current-user** on the server. If MCQs must be attributed to an author, that requires a session/token design **in the new PRD** (out of scope here). Until then, either store `author_id` only when you have a real auth mechanism, or keep questions unscoped — decide in the new PRD, do not silently add cookies.
+- `/mcqs` is a placeholder page. Replace it with real authoring UI when the new PRD says so; keep using shadcn `button`, `card`, `field`, `input`, `label` (and table/dialog already generated under `src/components/ui/`).
+- Reuse `getDb()`, the `users` table, and Vitest. Do not reinstall the test harness.
 
 ---
 
 ## Current Status
 
 **Last Updated**: 2026-09-04
-**Current Phase**: Phase 5 - Verification
-**Status**: Phase 4 COMPLETED; waiting for review before Phase 5
-**Next Steps**: After review, run the full verification pass (test, lint, build, browser).
+**Current Phase**: Phase 5 - Verification — **COMPLETED**
+**Status**: Identity sprint complete (register / login / logout + MCQ stub)
+**Branch**: `feature/register-login-logout`
+**Next Steps**: New PRD for MCQ authoring. Do not extend this PRD with question CRUD.
