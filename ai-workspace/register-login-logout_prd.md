@@ -1,5 +1,5 @@
 Date created: 2026-09-04
-Date last modified: 2026-09-04 (Phase 1 completed)
+Date last modified: 2026-09-04 (Phase 2 completed)
 
 # Register, Login, and Logout - Technical PRD
 
@@ -288,7 +288,7 @@ The first `npm test` of a phase should fail because the subject does not exist y
 - Local schema applied
 - `src/lib/db.ts` + passing tests
 
-### Phase 2: Password helper and user service - PLANNED
+### Phase 2: Password helper and user service - COMPLETED
 
 **Objective**: Centralize hashing and all user persistence.
 
@@ -495,6 +495,8 @@ export async function getDb(): Promise<D1Database> {
 
 See `src/lib/db.ts`.
 
+Password hashing (Phase 2) lives in `src/lib/password.ts` (`hashPassword` via Web Crypto SHA-256). Persistence lives in `src/lib/services/user-service.ts`. Public `User` never includes the hash; login reads it through `getUserAuthByUsername`. Unique violations throw `UserConflictError`; missing rows on update/delete throw `UserNotFoundError`.
+
 ### Important Notes
 
 - D1 is server-only. Never import `src/lib/db.ts` or the user service into a `'use client'` file.
@@ -526,7 +528,7 @@ See `src/lib/db.ts`.
 - [ ] Logout from `/mcqs` calls `POST /api/auth/logout` and then navigates to `/login`.
 - [ ] `/mcqs` is a stub only: no MCQ create/edit/list behavior.
 - [ ] API responses never include `password_hash`.
-- [ ] User service can create, update, and delete users (update/delete need not have UI or HTTP routes).
+- [x] User service can create, update, and delete users (update/delete need not have UI or HTTP routes).
 - [x] Vitest is installed; `npm test` runs the suite.
 - [ ] Each implementation phase was developed test-first: tests existed and failed before the phase's production code made them pass.
 - [ ] `npm test` is green for schema/db, password, user service, auth routes, and client auth components.
@@ -667,6 +669,6 @@ When working with this PRD:
 ## Current Status
 
 **Last Updated**: 2026-09-04
-**Current Phase**: Phase 2 - Password helper and user service
-**Status**: Phase 1 COMPLETED; waiting for review before Phase 2
-**Next Steps**: After review, write Phase 2 Vitest tests (password helper and user service), confirm red, then implement until green.
+**Current Phase**: Phase 3 - Auth route handlers
+**Status**: Phase 2 COMPLETED; waiting for review before Phase 3
+**Next Steps**: After review, write Phase 3 Vitest tests for register/login/logout routes, confirm red, then implement until green. Confirm Zod before adding it.
