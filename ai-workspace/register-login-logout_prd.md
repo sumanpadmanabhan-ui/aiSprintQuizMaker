@@ -1,5 +1,5 @@
 Date created: 2026-09-04
-Date last modified: 2026-09-04 (Phase 3 completed)
+Date last modified: 2026-09-04 (Phase 4 completed)
 
 # Register, Login, and Logout - Technical PRD
 
@@ -177,15 +177,34 @@ The client then navigates to `/login`. Visiting `/mcqs` afterward is still possi
 
 ### User Interface Requirements
 
-Use existing shadcn/ui pieces (`button`, `card`, `field`, `input`, `label`) and theme tokens. Forms are client components so they can hash with `crypto.subtle` and `fetch` the POST endpoints.
+Use existing shadcn/ui pieces (`button`, `card`, `field`, `input`, `label`) and theme tokens. Styling is Tailwind via those components (no extra CSS modules). Forms are client components so they can hash with `crypto.subtle` and `fetch` the POST endpoints.
+
+**Visual baseline:** official shadcn **Login** and **Signup** blocks. Page chrome is the block layout (full-viewport centered column, `max-w-sm`). Form markup starts from those blocks (`Card` + `FieldGroup` + `Field` + `FieldLabel` + `Input` + primary `Button`). Adapt the blocks as follows; do not ship stock demo features that contradict this PRD:
+
+- **Do not** include “Login with Google” / “Sign up with Google” (social login is out of scope).
+- **Do not** include “Forgot your password?” (password reset is out of scope).
+- Login identifier is **Username**, not Email. Description copy should say username, not “enter your email”.
+- Signup/register collects **First name** and **Last name** (not a single Full Name), plus **Username**, **Email**, **Password**, and **Confirm password**. Helper text may note that username and email may be the same.
+- Cross-links use real routes: register → `/login` (“Sign in”), login → `/register` (“Sign up”).
+- Components live at `@/components/login-form` and `@/components/signup-form` (the signup form is the register UI).
 
 #### Home (`/`)
 
 - Replace the Next.js starter page with a simple Quiz Maker landing.
-- Primary actions: navigate to Register and Log in.
+- Primary actions: navigate to Register and Log in (shadcn `Button` as links).
 - Short copy that this is a shared test-bank tool for teachers.
 
 #### Register (`/register`)
+
+- Page wrapper from the shadcn signup block:
+
+```tsx
+<div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+  <div className="w-full max-w-sm">
+    <SignupForm />
+  </div>
+</div>
+```
 
 - Fields: First name, Last name, Username, Email, Password, Confirm password.
 - Validation (client, before hashing):
@@ -200,6 +219,16 @@ Use existing shadcn/ui pieces (`button`, `card`, `field`, `input`, `label`) and 
 - Link to `/login` for teachers who already have an account.
 
 #### Log in (`/login`)
+
+- Page wrapper from the shadcn login block:
+
+```tsx
+<div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+  <div className="w-full max-w-sm">
+    <LoginForm />
+  </div>
+</div>
+```
 
 - Fields: Username, Password.
 - Validation: both required; password min length 8 (same rule as register, so a mistyped short string fails locally).
@@ -245,7 +274,7 @@ For **every** implementation phase:
 - Cover failure paths, not only the happy path.
 - Name tests so the failure message explains what broke.
 - Each test must pass in isolation. Do not depend on order or leftover state.
-- Server Components are not rendered in Testing Library. Test data/logic as functions; render only client components (`RegisterForm`, `LoginForm`, logout control).
+- Server Components are not rendered in Testing Library. Test data/logic as functions; render only client components (`SignupForm`, `LoginForm`, logout control).
 
 ### What "red" looks like
 
@@ -362,31 +391,32 @@ Zod is still **not installed**. Phase 3 used explicit request-body checks in `sr
 - Error status codes as specified
 - Passing route tests
 
-### Phase 4: UI pages and navigation - PLANNED
+### Phase 4: UI pages and navigation - COMPLETED
 
 **Objective**: Teachers can register or log in from the browser and reach the MCQ stub.
 
-**TDD order**: Extract client components (`RegisterForm`, `LoginForm`, logout control) so Testing Library can render them. Write the tests below with `render` / `userEvent`, mock `fetch` and `next/navigation`. Confirm red, then build the UI until green. Do not treat a screenshot as the phase-complete signal.
+**TDD order**: Extract client components (`SignupForm`, `LoginForm`, logout control) so Testing Library can render them. Write the tests below with `render` / `userEvent`, mock `fetch` and `next/navigation`. Confirm red, then build the UI until green. Do not treat a screenshot as the phase-complete signal.
 
 **Tests (write first — expect red)**:
 
 | File | Behavior to prove |
 |------|-------------------|
-| `src/components/auth/register-form.test.tsx` | Renders first name, last name, username, email, password, confirm password, and a submit control (query by label/role, not test ids). |
-| `src/components/auth/register-form.test.tsx` | Client validation: empty required fields and mismatched confirm password do not call `fetch`; matching username and email is allowed. |
-| `src/components/auth/register-form.test.tsx` | On valid submit, `fetch` is called with `POST /api/auth/register` and a JSON body that includes `passwordHash` (64 hex chars) and **does not** include `password`. |
-| `src/components/auth/register-form.test.tsx` | 201 response navigates to `/mcqs` (mocked `useRouter` / `router.push`). |
-| `src/components/auth/register-form.test.tsx` | 409 surfaces an error the user can read (field or form). |
-| `src/components/auth/login-form.test.tsx` | Renders username and password; submit hashes then `POST /api/auth/login` without plaintext `password` in the body; 200 navigates to `/mcqs`; 401 shows `"Invalid username or password."` |
-| `src/components/auth/logout-button.test.tsx` | Activate logout → `POST /api/auth/logout`, then navigate to `/login`. If `fetch` rejects, still navigate to `/login`. |
+| `src/components/signup-form.test.tsx` | Renders first name, last name, username, email, password, confirm password, and a submit control (query by label/role, not test ids). |
+| `src/components/signup-form.test.tsx` | Client validation: empty required fields and mismatched confirm password do not call `fetch`; matching username and email is allowed. |
+| `src/components/signup-form.test.tsx` | On valid submit, `fetch` is called with `POST /api/auth/register` and a JSON body that includes `passwordHash` (64 hex chars) and **does not** include `password`. |
+| `src/components/signup-form.test.tsx` | 201 response navigates to `/mcqs` (mocked `useRouter` / `router.push`). |
+| `src/components/signup-form.test.tsx` | 409 surfaces an error the user can read (field or form). |
+| `src/components/login-form.test.tsx` | Renders username and password; submit hashes then `POST /api/auth/login` without plaintext `password` in the body; 200 navigates to `/mcqs`; 401 shows `"Invalid username or password."` |
+| `src/components/logout-button.test.tsx` | Activate logout → `POST /api/auth/logout`, then navigate to `/login`. If `fetch` rejects, still navigate to `/login`. |
 | Landing / stub (optional extra) | If the landing and `/mcqs` copy live in client components, assert Register/Log in links and stub heading. If they stay Server Components, skip render tests and cover links in the browser in Phase 5. |
 
 **Implementation (make green)**:
 
 1. Replace `/` with the Quiz Maker landing.
-2. Build `/register` and `/login` using the client forms under test.
+2. Build `/register` and `/login` from the shadcn block page wrappers, using `SignupForm` and `LoginForm`.
 3. Build `/mcqs` stub with the logout control under test.
 4. Confirm in tests (and later in the browser) that `fetch` bodies use `passwordHash` only.
+5. Omit Google buttons and forgot-password from the stock blocks.
 
 **Phase-complete signal**: `npm test` green including the new `*.test.tsx` files.
 
@@ -444,12 +474,14 @@ Zod is still **not installed**. Phase 3 used explicit request-body checks in `sr
 | `src/app/register/page.tsx` | Register form |
 | `src/app/login/page.tsx` | Login form |
 | `src/app/mcqs/page.tsx` | MCQ stub |
-| `src/components/auth/` | Client forms and logout control (tested with Testing Library) |
+| `src/components/login-form.tsx` | shadcn login block, adapted for username + hashed POST |
+| `src/components/signup-form.tsx` | shadcn signup block, adapted for register fields + hashed POST |
+| `src/components/logout-button.tsx` | Logout control on the MCQ stub |
 | `src/components/ui/` | shadcn primitives — do not hand-edit |
 | `vitest.config.ts` | Vitest + `@/` path resolution |
 | `src/lib/*.test.ts` | Unit tests colocated with schema, db, password, user service |
 | `src/app/api/auth/**/route.test.ts` | Route-handler tests |
-| `src/components/auth/*.test.tsx` | Client component tests |
+| `src/components/*.test.tsx` | Client form and logout tests |
 
 ### Implementation Patterns
 
@@ -499,6 +531,8 @@ Password hashing (Phase 2) lives in `src/lib/password.ts` (`hashPassword` via We
 
 Auth HTTP (Phase 3): `POST /api/auth/register`, `/login`, `/logout`. Bodies are validated in `src/app/api/auth/validation.ts` without Zod. Login compares hashes with `crypto.timingSafeEqual` in `src/app/api/auth/password-compare.ts`. Logout does not call the user service.
 
+UI (Phase 4): shadcn Login and Signup blocks, adapted. Pages at `/login` and `/register` use the block layout. `SignupForm` / `LoginForm` hash then `fetch`. Google and forgot-password were omitted. `/mcqs` is a stub with `LogoutButton`.
+
 ### Important Notes
 
 - D1 is server-only. Never import `src/lib/db.ts` or the user service into a `'use client'` file.
@@ -519,21 +553,21 @@ Auth HTTP (Phase 3): `POST /api/auth/register`, `/login`, `/logout`. Bodies are 
 - [x] A local D1 database exists, `DB` is bound, and the `users` migration is applied locally.
 - [ ] A teacher can register with first name, last name, username, email, and password.
 - [ ] Username and email may be the same value and registration still succeeds.
-- [ ] The register POST body contains `passwordHash` and does not contain the plaintext password.
+- [x] The register POST body contains `passwordHash` and does not contain the plaintext password.
 - [ ] The `users.password_hash` column stores a hash, not the plaintext password.
 - [x] Duplicate username or duplicate email is rejected with 409 and a clear message.
 - [x] Invalid register payloads are rejected with 400.
-- [ ] After successful registration the teacher is taken to `/mcqs`.
-- [ ] A registered teacher can log in with username and password and is taken to `/mcqs`.
+- [x] After successful registration the teacher is taken to `/mcqs`.
+- [x] A registered teacher can log in with username and password and is taken to `/mcqs`.
 - [x] Wrong password or unknown username returns 401 with `"Invalid username or password."` and does not distinguish which failed.
-- [ ] Login POST body contains `passwordHash` and does not contain the plaintext password.
-- [ ] Logout from `/mcqs` calls `POST /api/auth/logout` and then navigates to `/login`.
-- [ ] `/mcqs` is a stub only: no MCQ create/edit/list behavior.
+- [x] Login POST body contains `passwordHash` and does not contain the plaintext password.
+- [x] Logout from `/mcqs` calls `POST /api/auth/logout` and then navigates to `/login`.
+- [x] `/mcqs` is a stub only: no MCQ create/edit/list behavior.
 - [x] API responses never include `password_hash`.
 - [x] User service can create, update, and delete users (update/delete need not have UI or HTTP routes).
 - [x] Vitest is installed; `npm test` runs the suite.
 - [ ] Each implementation phase was developed test-first: tests existed and failed before the phase's production code made them pass.
-- [ ] `npm test` is green for schema/db, password, user service, auth routes, and client auth components.
+- [x] `npm test` is green for schema/db, password, user service, auth routes, and client auth components.
 - [ ] `npm run lint` and `npm run build` succeed after implementation.
 
 ---
@@ -671,6 +705,6 @@ When working with this PRD:
 ## Current Status
 
 **Last Updated**: 2026-09-04
-**Current Phase**: Phase 4 - UI pages and navigation
-**Status**: Phase 3 COMPLETED; waiting for review before Phase 4
-**Next Steps**: After review, write Phase 4 Vitest tests for register/login/logout UI, confirm red, then implement until green.
+**Current Phase**: Phase 5 - Verification
+**Status**: Phase 4 COMPLETED; waiting for review before Phase 5
+**Next Steps**: After review, run the full verification pass (test, lint, build, browser).

@@ -11,7 +11,7 @@ the problem, the primary user, and the current state. Two or three sentences.
 Keep it current. An out-of-date description here misleads every future conversation.
 -->
 
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The current sprint is register/login/logout only (no MCQ authoring yet). Phases 1–3 are done: D1 `users` table, user service, and POST `/api/auth/register|login|logout`. The technical PRD in `ai-workspace/register-login-logout_prd.md` is the source of truth for the current phase.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The current sprint is register/login/logout only (no MCQ authoring yet). Phases 1–4 are done: D1, user service, auth APIs, and shadcn login/register/MCQ-stub UI. The technical PRD in `ai-workspace/register-login-logout_prd.md` is the source of truth for the current phase.
 
 ## Stack
 
