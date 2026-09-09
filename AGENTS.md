@@ -5,7 +5,7 @@ agent conversation, so it describes only what is stable and true of the project.
 
 ## Project
 
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register plus an ungated `/mcqs` stub. There is **no session or token**; `/mcqs` is not gated. Next product work is the MCQ test-bank sprint — write a new technical PRD before implementing it. Identity details live in `ai-workspace/register-login-logout_prd.md`.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is still an ungated stub. MCQ Phase 1 is done: local D1 tables `mcqs`, `mcq_choices`, and `mcq_attempts` (`migrations/0002_add_mcq_tables.sql`). Source of truth for remaining MCQ work: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
 
 ## Stack
 
@@ -44,7 +44,8 @@ Import through the `@/` alias, which maps to `src/`.
 |---|---|
 | `npm run dev` | Local dev server on Node at `localhost:3000` |
 | `npm run preview` | Build and run on the local **Workers** runtime |
-| `npm run build` | Production build |
+| `npm run build` | OpenNext/Workers production build (creates `.open-next/`) |
+| `npm run build:next` | Next.js-only build (no Worker bundle) |
 | `npm run lint` | ESLint |
 | `npm run deploy` | Build and deploy to Cloudflare |
 | `npm run cf-typegen` | Regenerate `cloudflare-env.d.ts` after changing bindings |

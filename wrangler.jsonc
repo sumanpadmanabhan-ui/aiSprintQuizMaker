@@ -18,11 +18,19 @@
 	"observability": {
 		"enabled": true
 	},
+	/**
+	 * Cloudflare Workers Builds (git deploy):
+	 * Build command:  npm run build
+	 * Deploy command: npx wrangler deploy
+	 * `npm run build` must be `opennextjs-cloudflare build` so `.open-next/` exists
+	 * before Wrangler runs. A plain `next build` fails with
+	 * "Could not find compiled Open Next config".
+	 */
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "quiz-maker",
-			"database_id": "local-dev-quiz-maker"
+			"database_id": "d7b83a7e-48ba-4a34-8e44-04d1c1e581c8"
 		}
 	]
 	/**

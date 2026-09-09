@@ -30,7 +30,7 @@ Two things, beyond a working application skeleton:
 |---|---|
 | `npm run dev` | Dev server on Node at [localhost:3000](http://localhost:3000) |
 | `npm run preview` | Build and run on the local Cloudflare Workers runtime |
-| `npm run build` | Production build |
+| `npm run build` | OpenNext/Workers production build |
 | `npm run lint` | ESLint |
 | `npm run deploy` | Deploy to Cloudflare |
 | `npm run cf-typegen` | Regenerate Cloudflare binding types |

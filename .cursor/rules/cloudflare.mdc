@@ -34,5 +34,8 @@ Code must be compatible with the Workers runtime.
 
 - `npm run preview` builds and runs the app on the local Workers runtime. Prefer this over
   `npm run dev` when verifying anything runtime-specific, since `npm run dev` uses Node.
-- `npm run deploy` builds and deploys to Cloudflare.
+- `npm run build` is **OpenNext** (`opennextjs-cloudflare build`). That creates `.open-next/`,
+  which Wrangler needs. Do not use a plain `next build` as the Cloudflare CI build command.
+- `npm run deploy` runs the OpenNext build and then `opennextjs-cloudflare deploy`.
+- Workers Builds (git): Build command `npm run build`, Deploy command `npx wrangler deploy`.
 - Do not run `npm run deploy` unless the user explicitly asks you to deploy.
