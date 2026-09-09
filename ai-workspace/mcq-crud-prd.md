@@ -1,11 +1,11 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-09 (Phase 1 completed)
+Date last modified: 2026-09-09 (Phase 2 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 1 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 2 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 2
+> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 3
 > until asked.
 
 ## Overview/Problem
@@ -315,7 +315,7 @@ migration until green. Wrangler apply is not unit-tested; it is still a delivera
 - Local D1 schema applied (`quiz-maker` at `.wrangler/state/v3/d1`)
 - This PRD updated to COMPLETED for Phase 1
 
-### Phase 2: MCQ service - PLANNED
+### Phase 2: MCQ service - COMPLETED
 
 **Objective**: Centralize MCQ persistence and business rules. Mock `@/lib/db`.
 
@@ -324,8 +324,31 @@ migration until green. Wrangler apply is not unit-tested; it is still a delivera
 choices ordered; list pagination/search; update replaces choices; delete; recordAttempt
 computes correctness; not-found errors.
 
-**Implementation**: `src/lib/services/mcq-service.ts` using `getDb()`, `?1`/`?2`, `all()` /
-`results[0]`. No HTTP yet.
+**What happened**:
+
+1. Tests written first. Isolated run failed: `Failed to resolve import "@/lib/services/mcq-service"`.
+2. `src/lib/services/mcq-service.ts` uses `getDb()`, numbered `?1`/`?2` placeholders, `all()` /
+   `results[0]`, and `.run()` for deletes.
+3. Validation lives in the service (no Zod): title/question required; title ≤ 200,
+   description ≤ 500, question ≤ 1000; blank description → `NULL`; 2–6 choices; exactly one
+   correct; `createdBy` / attempt `userId` required.
+4. `is_correct` is bound as INTEGER `1`/`0` and read with `=== 1`. Choices are selected
+   `ORDER BY order_index` and also sorted in memory.
+5. Update does **not** `SET created_by` (ownership preserved). `createdBy` on the update
+   input is ignored. Delete is `DELETE FROM mcqs` only; choices/attempts rely on
+   `ON DELETE CASCADE`.
+6. Isolated service tests: **21 passed**. Full suite: **66 passed / 12 files**. No HTTP
+   routes. No new dependencies.
+
+**Implementation**: `src/lib/services/mcq-service.ts` — `createMcq`, `getMcqById` (null if
+missing), `listMcqs`, `updateMcq`, `deleteMcq`, `recordAttempt`. Errors:
+`McqValidationError`, `McqNotFoundError` (`"MCQ not found."`).
+
+**Deliverables**:
+
+- `src/lib/services/mcq-service.ts`
+- `src/lib/services/mcq-service.test.ts` (21 tests)
+- This PRD updated to COMPLETED for Phase 2
 
 ### Phase 3: HTTP APIs - PLANNED
 
@@ -362,7 +385,8 @@ edit → delete. No new features.
 - `migrations/0002_add_mcq_tables.sql` — MCQ tables (Phase 1)
 - `src/lib/db.ts` — existing `getDb()`; reuse, do not replace
 - `src/lib/mcq-schema.test.ts` — Phase 1 schema assertions (4 tests)
-- `src/lib/services/mcq-service.ts` — Phase 2 (not started)
+- `src/lib/services/mcq-service.ts` — Phase 2 persistence + validation
+- `src/lib/services/mcq-service.test.ts` — Phase 2 (21 tests)
 - `src/app/api/mcqs/` — Phase 3 (not started)
 - `src/app/mcqs/` and `src/components/` — Phase 4 (stub still in place)
 
@@ -375,12 +399,17 @@ export async function getDb(): Promise<D1Database> {
 }
 ```
 
-Prepared statements with `?1`, `?2`. Prefer `all()` and `results[0]` over `first()`.
+Prepared statements with `?1`, `?2`. Prefer `all()` and `results[0]` over `first()`. Deletes
+use `.run()` and `meta.changes`. Service validation runs **before** `getDb()` so invalid
+input never touches D1.
 
 ```typescript
-const isCorrect = choice.isCorrect ? 1 : 0;
+.bind(mcqId, choice.choiceText, choice.isCorrect ? 1 : 0, choice.orderIndex)
 const normalized = row.is_correct === 1;
 ```
+
+`listMcqs` binds `LIKE ?1` (same placeholder reused for title/description/question), then
+`LIMIT ?n OFFSET ?n+1`. Default page 1, limit 10, max 50.
 
 ### Important Notes
 
@@ -398,7 +427,7 @@ const normalized = row.is_correct === 1;
 - [ ] A teacher can create an MCQ with 2–6 choices and exactly one correct answer.
 - [ ] A teacher can list, search, edit, and delete MCQs.
 - [ ] Preview records an attempt and shows whether the selected choice was correct.
-- [ ] Validation rejects empty title/question, wrong choice counts, and not-exactly-one correct.
+- [x] Validation rejects empty title/question, wrong choice counts, and not-exactly-one correct.
 - [ ] Deleting an MCQ removes its choices and attempts (cascade).
 - [ ] No cookies, sessions, or route guards were added.
 - [ ] No TEKS or AI generation.
@@ -474,6 +503,14 @@ None new. Do not add secrets for this sprint.
 `wrangler d1 execute quiz-maker --local --command "SELECT name FROM d1_migrations;"`.
 Never pass `--remote`.
 
+### Update preserves created_by
+
+**Problem**: A test that forbids `created_by` anywhere in the UPDATE SQL fails even when
+ownership is not changed.
+**Cause**: `RETURNING ... created_by` is required so the caller still sees the original author.
+**Solution**: Assert the `SET` clause does not assign `created_by`. See
+`src/lib/services/mcq-service.ts` and `src/lib/services/mcq-service.test.ts`.
+
 ---
 
 ## Notes for AI Agents
@@ -483,7 +520,7 @@ Never pass `--remote`.
 3. Update phase status markers as work progresses. Mark only the current phase COMPLETED.
 4. Add implementation details (real filenames, commands, test counts) as they happen.
 5. Cite code as `filepath:line-number`.
-6. Phase 1 is schema + local migration + schema tests only.
+6. Phase 1 is schema only. Phase 2 is `mcq-service` only — no `/api/mcqs` routes yet.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -491,11 +528,10 @@ Never pass `--remote`.
 ## Current Status
 
 **Last Updated**: 2026-09-09
-**Current Phase**: Phase 1 - Database foundation — **COMPLETED**
-**Status**: Local MCQ schema in place. No service, APIs, or UI yet.
+**Current Phase**: Phase 2 - MCQ service — **COMPLETED**
+**Status**: MCQ service + validation in place. No APIs or UI yet.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **45 passed / 11 files**. `npm run lint` **exit 0** (pre-existing
-warning in `open-next.config.ts`, unrelated). Local D1 has `0002_add_mcq_tables.sql`
-applied. `--remote` not used. `npm run build` not run (Phase 5).
-**Next Steps**: Phase 2 — MCQ service (`src/lib/services/mcq-service.ts`), test-first. Do not
-start Phase 2 until asked.
+**Verification**: `npm test` **66 passed / 12 files**. `npm run lint` **exit 0** (pre-existing
+warning in `open-next.config.ts`, unrelated). No `--remote`. `npm run build` not run (Phase 5).
+**Next Steps**: Phase 3 — HTTP APIs under `src/app/api/mcqs/`, test-first. Do not start Phase 3
+until asked.
