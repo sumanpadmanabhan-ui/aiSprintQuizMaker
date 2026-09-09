@@ -1,11 +1,11 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-09 (Phase 2 completed)
+Date last modified: 2026-09-09 (Phase 3 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 2 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 3 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 3
+> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 4
 > until asked.
 
 ## Overview/Problem
@@ -350,15 +350,39 @@ missing), `listMcqs`, `updateMcq`, `deleteMcq`, `recordAttempt`. Errors:
 - `src/lib/services/mcq-service.test.ts` (21 tests)
 - This PRD updated to COMPLETED for Phase 2
 
-### Phase 3: HTTP APIs - PLANNED
+### Phase 3: HTTP APIs - COMPLETED
 
 **Objective**: JSON CRUD + attempts as specified above.
 
 **Tests**: route tests under `src/app/api/mcqs/` for status codes, validation 400s, 404
 messages, 201/200/204 shapes, no service call on invalid bodies.
 
-**Implementation**: `src/app/api/mcqs/route.ts`, `[id]/route.ts`, `[id]/attempts/route.ts`,
-explicit validation module. Do not add cookies.
+**What happened**:
+
+1. Tests written first. Isolated run failed: `Failed to resolve import "./route"` for
+   `src/app/api/mcqs/route.ts`, `[id]/route.ts`, and `[id]/attempts/route.ts`.
+2. HTTP layer is **route handlers**, not Server Actions, matching this PRD and the auth
+   pattern (`fetch` + JSON). Layering: Client → HTTP route → `mcq-service` → `getDb()`.
+3. `src/app/api/mcqs/validation.ts` parses JSON and query params **before** the service.
+   Invalid bodies/query return 400 and do not call the service. `McqValidationError` → 400,
+   `McqNotFoundError` → 404 `"MCQ not found."`, anything else → 500 `"Internal server error."`
+4. PUT accepts `createdBy` but does **not** enforce ownership (identity has no session).
+   Attempt correctness is computed in `recordAttempt`, not by the client.
+5. Isolated API tests: **16 passed**. Full suite: **82 passed / 15 files**. No cookies.
+   No UI. No new dependencies.
+
+**Implementation**:
+
+- `src/app/api/mcqs/route.ts` — GET list, POST create
+- `src/app/api/mcqs/[id]/route.ts` — GET, PUT, DELETE (`params` is a Promise, Next.js 16)
+- `src/app/api/mcqs/[id]/attempts/route.ts` — POST attempt
+- `src/app/api/mcqs/validation.ts` — `parseListQuery`, `parseMcqBody`, `parseAttemptBody`,
+  `mcqErrorResponse`
+
+**Deliverables**:
+
+- The four files above plus colocated route tests (16 tests)
+- This PRD updated to COMPLETED for Phase 3
 
 ### Phase 4: Authoring UI - PLANNED
 
@@ -387,7 +411,10 @@ edit → delete. No new features.
 - `src/lib/mcq-schema.test.ts` — Phase 1 schema assertions (4 tests)
 - `src/lib/services/mcq-service.ts` — Phase 2 persistence + validation
 - `src/lib/services/mcq-service.test.ts` — Phase 2 (21 tests)
-- `src/app/api/mcqs/` — Phase 3 (not started)
+- `src/app/api/mcqs/validation.ts` — Phase 3 request parsing
+- `src/app/api/mcqs/route.ts` — GET list, POST create
+- `src/app/api/mcqs/[id]/route.ts` — GET / PUT / DELETE by id
+- `src/app/api/mcqs/[id]/attempts/route.ts` — POST attempt
 - `src/app/mcqs/` and `src/components/` — Phase 4 (stub still in place)
 
 ### Implementation Patterns
@@ -520,7 +547,8 @@ ownership is not changed.
 3. Update phase status markers as work progresses. Mark only the current phase COMPLETED.
 4. Add implementation details (real filenames, commands, test counts) as they happen.
 5. Cite code as `filepath:line-number`.
-6. Phase 1 is schema only. Phase 2 is `mcq-service` only — no `/api/mcqs` routes yet.
+6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP — no UI yet.
+   Do not convert MCQ CRUD to Server Actions; this PRD chose HTTP like auth.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -528,10 +556,9 @@ ownership is not changed.
 ## Current Status
 
 **Last Updated**: 2026-09-09
-**Current Phase**: Phase 2 - MCQ service — **COMPLETED**
-**Status**: MCQ service + validation in place. No APIs or UI yet.
+**Current Phase**: Phase 3 - HTTP APIs — **COMPLETED**
+**Status**: MCQ HTTP CRUD + attempts in place. `/mcqs` is still a stub.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **66 passed / 12 files**. `npm run lint` **exit 0** (pre-existing
+**Verification**: `npm test` **82 passed / 15 files**. `npm run lint` **exit 0** (pre-existing
 warning in `open-next.config.ts`, unrelated). No `--remote`. `npm run build` not run (Phase 5).
-**Next Steps**: Phase 3 — HTTP APIs under `src/app/api/mcqs/`, test-first. Do not start Phase 3
-until asked.
+**Next Steps**: Phase 4 — authoring UI, test-first. Do not start Phase 4 until asked.

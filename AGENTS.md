@@ -5,7 +5,7 @@ agent conversation, so it describes only what is stable and true of the project.
 
 ## Project
 
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is still an ungated stub. MCQ Phases 1–2 are done: local D1 tables plus `src/lib/services/mcq-service.ts` (CRUD, list/search, attempts). Source of truth for remaining MCQ work: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is still an ungated stub. MCQ Phases 1–3 are done: local D1 tables, `mcq-service`, and HTTP `/api/mcqs` (list/create/get/update/delete/attempts). Source of truth for remaining MCQ work: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
 
 ## Stack
 
@@ -27,6 +27,7 @@ validation in `src/app/api/auth/validation.ts`, not Zod.
 ```
 src/app/            Routes, layouts, and global styles (App Router)
 src/app/api/auth/   Register, login, logout HTTP POST handlers
+src/app/api/mcqs/   MCQ list/create/get/update/delete/attempts HTTP handlers
 src/components/ui/  shadcn/ui components (generated; avoid hand-editing)
 src/lib/            Shared utilities (`db.ts`, `password.ts`)
 src/lib/services/   Domain services (`user-service.ts`)

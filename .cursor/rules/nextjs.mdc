@@ -27,9 +27,9 @@ This project uses the Next.js App Router with React Server Components.
 
 - Prefer Server Actions for new form submissions and mutations. Reach for a route
   handler in `src/app/api/` when the product needs a real HTTP endpoint.
-- **Auth exception (do not convert):** register, login, and logout are HTTP POST
-  handlers under `src/app/api/auth/`. Client forms hash then `fetch` those URLs.
-  That was an explicit product requirement, not an accident.
+- **MCQ exception (do not convert):** MCQ CRUD is HTTP under `src/app/api/mcqs/`. Clients
+  `fetch` those URLs. That was an explicit product requirement in
+  `ai-workspace/mcq-crud-prd.md`, same pattern as auth.
 - **Zod is not installed.** Auth validates in `src/app/api/auth/validation.ts` with
   explicit checks. Ask before adding Zod. Treat every input as untrusted either way.
 - Prefer the URL for state that should be shareable or survive a reload.
