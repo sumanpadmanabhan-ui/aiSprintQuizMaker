@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { clearCurrentUserId } from "@/lib/current-user";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 
@@ -15,6 +16,7 @@ export function LogoutButton() {
 		} catch {
 			setError("Logout request failed. Returning to login.");
 		}
+		clearCurrentUserId();
 		router.push("/login");
 	}
 

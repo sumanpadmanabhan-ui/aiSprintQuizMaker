@@ -3,18 +3,18 @@ Date last modified: 2026-09-09 (Phase 3 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 3 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 4 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 4
-> until asked.
+> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 5
+> until asked. Do not convert MCQ CRUD to Server Actions or add Zod.
 
 ## Overview/Problem
 
-Teachers can register and log in, but they still cannot put a multiple-choice question into
-the shared test bank. `/mcqs` is an ungated stub with no tables, APIs, or authoring UI, so
-two teachers cannot create, edit, list, delete, or preview questions together. This sprint
-adds CRUD for MCQs (title, optional description, question stem, 2–6 choices, exactly one
-correct answer) plus a preview attempt, on top of the existing D1 `users` table.
+Teachers can register and log in, and they can now author a shared multiple-choice test
+bank: D1 tables, HTTP `/api/mcqs`, and ungated listing/create/edit/preview UI. There is
+still no session. `createdBy` / attempt `userId` come from a `localStorage` stand-in plus an
+explicit Author user ID field. Remaining work is Phase 5 verification (full build + browser
+smoke), not new features.
 
 ---
 
@@ -384,15 +384,44 @@ messages, 201/200/204 shapes, no service call on invalid bodies.
 - The four files above plus colocated route tests (16 tests)
 - This PRD updated to COMPLETED for Phase 3
 
-### Phase 4: Authoring UI - PLANNED
+### Phase 4: Authoring UI - COMPLETED
 
 **Objective**: Replace the stub with listing, create, edit, delete, preview.
 
-**Tests**: client form/list/preview components with Testing Library; mock `fetch` and
-`next/navigation`. Server Components: test data helpers, not render.
+**Tests (write first — expect red)**: client form/list/preview components with Testing Library;
+mock `fetch` and `next/navigation`. Isolated run failed: missing `@/lib/current-user`,
+`@/components/mcq-form`, `@/components/mcq-list`, and `@/components/mcq-preview`.
 
-**Implementation**: pages under `src/app/mcqs/` and `src/components/`. Ask before adding
-shadcn components.
+**What happened**:
+
+1. This phase is **authoring UI that `fetch`es Phase 3 HTTP APIs**, not Server Actions.
+   Curriculum prompts that say “Server Actions” / Zod do not apply: Zod is not installed,
+   and this PRD plus `.cursor/rules/nextjs.mdc` keep MCQ CRUD as HTTP like auth.
+   Layering: Client → `fetch` `/api/mcqs` → route → `mcq-service` → `getDb()`.
+2. `createdBy` / attempt `userId` without a session: login (200) and register (201) store
+   `user.id` in `localStorage` (`quiz-maker-user-id`). Logout clears it. Create/edit/preview
+   expose an **Author user ID** field (prefilled from that key) and document that it is
+   attribution, not authorization. No cookies, JWT, or route guards.
+3. Delete uses `window.confirm` (no new shadcn `dropdown-menu`). Choices: add/remove and
+   up/down reorder. Preview submits `{ userId, selectedChoiceId }`; correctness comes from
+   the API, not the client.
+4. Isolated Phase 4 tests: **12 passed** (current-user 3, form 3, list 4, preview 2).
+   Full suite: **94 passed / 19 files**. `npm run lint` exit 0 (pre-existing warning in
+   `open-next.config.ts`). No new dependencies. `npm run build` not run (Phase 5).
+
+**Implementation**:
+
+- `src/lib/current-user.ts` — `getCurrentUserId` / `setCurrentUserId` / `clearCurrentUserId`
+- `src/components/mcq-form.tsx` — create + edit (`McqEdit` loads GET `/api/mcqs/[id]`)
+- `src/components/mcq-list.tsx` — listing, search, pagination, delete confirm
+- `src/components/mcq-preview.tsx` — attempt + correct/incorrect
+- `src/app/mcqs/page.tsx`, `create/page.tsx`, `[id]/edit/page.tsx`, `[id]/preview/page.tsx`
+
+**Deliverables**:
+
+- The files above plus colocated client tests (12 tests)
+- Login/register persist the user id; logout clears it
+- This PRD updated to COMPLETED for Phase 4
 
 ### Phase 5: Verification - PLANNED
 
@@ -415,7 +444,12 @@ edit → delete. No new features.
 - `src/app/api/mcqs/route.ts` — GET list, POST create
 - `src/app/api/mcqs/[id]/route.ts` — GET / PUT / DELETE by id
 - `src/app/api/mcqs/[id]/attempts/route.ts` — POST attempt
-- `src/app/mcqs/` and `src/components/` — Phase 4 (stub still in place)
+- `src/lib/current-user.ts` — localStorage stand-in for `users.id` (Phase 4)
+- `src/components/mcq-form.tsx` / `mcq-list.tsx` / `mcq-preview.tsx` — authoring UI
+- `src/app/mcqs/page.tsx` — listing
+- `src/app/mcqs/create/page.tsx` — create
+- `src/app/mcqs/[id]/edit/page.tsx` — edit (`params` is a Promise, Next.js 16)
+- `src/app/mcqs/[id]/preview/page.tsx` — preview attempt
 
 ### Implementation Patterns
 
@@ -451,13 +485,13 @@ const normalized = row.is_correct === 1;
 ## Acceptance Criteria
 
 - [x] Local D1 has `mcqs`, `mcq_choices`, and `mcq_attempts` with the FKs and indexes above.
-- [ ] A teacher can create an MCQ with 2–6 choices and exactly one correct answer.
-- [ ] A teacher can list, search, edit, and delete MCQs.
-- [ ] Preview records an attempt and shows whether the selected choice was correct.
+- [x] A teacher can create an MCQ with 2–6 choices and exactly one correct answer.
+- [x] A teacher can list, search, edit, and delete MCQs.
+- [x] Preview records an attempt and shows whether the selected choice was correct.
 - [x] Validation rejects empty title/question, wrong choice counts, and not-exactly-one correct.
-- [ ] Deleting an MCQ removes its choices and attempts (cascade).
-- [ ] No cookies, sessions, or route guards were added.
-- [ ] No TEKS or AI generation.
+- [x] Deleting an MCQ removes its choices and attempts (cascade).
+- [x] No cookies, sessions, or route guards were added.
+- [x] No TEKS or AI generation.
 - [ ] `npm test` and `npm run lint` pass; `npm run build` is run in Phase 5, not Phase 1.
 
 ---
@@ -547,8 +581,9 @@ ownership is not changed.
 3. Update phase status markers as work progresses. Mark only the current phase COMPLETED.
 4. Add implementation details (real filenames, commands, test counts) as they happen.
 5. Cite code as `filepath:line-number`.
-6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP — no UI yet.
-   Do not convert MCQ CRUD to Server Actions; this PRD chose HTTP like auth.
+6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP. Phase 4 is
+   authoring UI that `fetch`es those APIs. Do not convert MCQ CRUD to Server Actions; this
+   PRD chose HTTP like auth. Phase 5 is verification only.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -556,9 +591,10 @@ ownership is not changed.
 ## Current Status
 
 **Last Updated**: 2026-09-09
-**Current Phase**: Phase 3 - HTTP APIs — **COMPLETED**
-**Status**: MCQ HTTP CRUD + attempts in place. `/mcqs` is still a stub.
+**Current Phase**: Phase 4 - Authoring UI — **COMPLETED**
+**Status**: Listing, create, edit, delete, and preview UI in place. `/mcqs` is no longer a stub.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **82 passed / 15 files**. `npm run lint` **exit 0** (pre-existing
+**Verification**: `npm test` **94 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
 warning in `open-next.config.ts`, unrelated). No `--remote`. `npm run build` not run (Phase 5).
-**Next Steps**: Phase 4 — authoring UI, test-first. Do not start Phase 4 until asked.
+**Next Steps**: Phase 5 — verification (full suite, lint, build, browser smoke). Do not start
+Phase 5 until asked.

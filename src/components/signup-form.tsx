@@ -3,6 +3,7 @@
 import { useState, type ComponentProps, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { setCurrentUserId } from "@/lib/current-user";
 import { hashPassword } from "@/lib/password";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,9 +69,15 @@ export function SignupForm({ ...props }: ComponentProps<typeof Card>) {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ firstName, lastName, username, email, passwordHash }),
 		});
-		const json = (await response.json().catch(() => ({}))) as { error?: string };
+		const json = (await response.json().catch(() => ({}))) as {
+			error?: string;
+			user?: { id?: string };
+		};
 
 		if (response.status === 201) {
+			if (json.user?.id) {
+				setCurrentUserId(json.user.id);
+			}
 			router.push("/mcqs");
 			return;
 		}

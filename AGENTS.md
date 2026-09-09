@@ -5,7 +5,7 @@ agent conversation, so it describes only what is stable and true of the project.
 
 ## Project
 
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. The register/login/logout sprint is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is still an ungated stub. MCQ Phases 1–3 are done: local D1 tables, `mcq-service`, and HTTP `/api/mcqs` (list/create/get/update/delete/attempts). Source of truth for remaining MCQ work: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. Identity is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is ungated. MCQ Phases 1–4 are done: local D1 tables, `mcq-service`, HTTP `/api/mcqs`, and authoring UI that `fetch`es those APIs. Login/register store `users.id` in `localStorage` as the `createdBy` / attempt `userId` stand-in. Next product work is Phase 5 verification. Source of truth: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
 
 ## Stack
 
@@ -26,11 +26,12 @@ validation in `src/app/api/auth/validation.ts`, not Zod.
 
 ```
 src/app/            Routes, layouts, and global styles (App Router)
+src/app/mcqs/       MCQ listing, create, edit, and preview pages
 src/app/api/auth/   Register, login, logout HTTP POST handlers
 src/app/api/mcqs/   MCQ list/create/get/update/delete/attempts HTTP handlers
 src/components/ui/  shadcn/ui components (generated; avoid hand-editing)
-src/lib/            Shared utilities (`db.ts`, `password.ts`)
-src/lib/services/   Domain services (`user-service.ts`)
+src/lib/            Shared utilities (`db.ts`, `password.ts`, `current-user.ts`)
+src/lib/services/   Domain services (`user-service.ts`, `mcq-service.ts`)
 ai-workspace/       Technical PRDs and planning documents
 .cursor/rules/      File-scoped conventions (including `auth.mdc`, `d1.mdc`)
 .cursor/skills/     Task-specific guidance loaded on demand
