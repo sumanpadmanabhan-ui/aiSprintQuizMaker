@@ -1,12 +1,12 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-10 (Phase 6 completed)
+Date last modified: 2026-09-10 (Phase 7 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 6 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 7 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
 > multiple-choice test bank. Do not convert MCQ CRUD to Server Actions or add Zod. Do not
-> start Phase 7 until asked.
+> start Phase 8 until asked.
 
 ## Overview/Problem
 
@@ -486,6 +486,31 @@ missing, edit loading had no `role="status"`). Add/remove, no-correct, save erro
 - `src/components/mcq-form.tsx` + `mcq-form.test.tsx` (8 tests)
 - This PRD updated to COMPLETED for Phase 6
 
+### Phase 7: Preview & Attempts - COMPLETED
+
+**Objective**: Finish preview/attempt UX on the existing Phase 4 preview page. Curriculum
+names this Phase 7. Do not redo Phases 1–6. Do not start Phase 8.
+
+**Tests (write first — expect red)**: `src/components/mcq-preview.test.tsx` — loading
+`role="status"`, 404 without Submit, no POST until a choice is selected, POST body is
+only `{ userId, selectedChoiceId }` (no `isCorrect`), Try Again then a second attempt.
+Isolated run: **2 failed / 4 passed** (loading had no `role="status"`, no Try Again).
+
+**What happened**:
+
+1. Preview already `GET /api/mcqs/[id]` and `POST /api/mcqs/[id]/attempts`. Correctness is
+   still computed in `recordAttempt`, never sent by the client.
+2. UX gaps closed: loading status, **Try Again** (clears feedback and selection, records
+   another attempt), Back to `/mcqs`. Feedback still uses the attempt response, not choice
+   `isCorrect` from GET.
+3. Isolated preview tests: **6 passed**. Full suite: **106 passed / 19 files**. `npm run lint`
+   recorded below. `npm run build` not re-run (Phase 5). No new dependencies.
+
+**Deliverables**:
+
+- `src/components/mcq-preview.tsx` + `mcq-preview.test.tsx` (6 tests)
+- This PRD updated to COMPLETED for Phase 7
+
 ---
 
 ## Technical Implementation Details
@@ -641,8 +666,8 @@ ownership is not changed.
 5. Cite code as `filepath:line-number`.
 6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP. Phase 4 is
    authoring UI that `fetch`es those APIs. Phase 5 is verification and dashboard list states.
-   Phase 6 is create/edit form UX on that same UI. Do not convert MCQ CRUD to Server Actions.
-   Do not start Phase 7 (preview) until asked.
+   Phase 6 is create/edit form UX. Phase 7 is preview/attempts UX. Do not convert MCQ CRUD
+   to Server Actions. Do not start Phase 8 until asked.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -650,9 +675,9 @@ ownership is not changed.
 ## Current Status
 
 **Last Updated**: 2026-09-10
-**Current Phase**: Phase 6 - Create/Edit MCQ — **COMPLETED**
-**Status**: New/Edit question form UX complete on `/mcqs/create` and `/mcqs/[id]/edit`.
+**Current Phase**: Phase 7 - Preview & Attempts — **COMPLETED**
+**Status**: Preview records attempts server-side; Try Again and Back are in place.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **102 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
+**Verification**: `npm test` **106 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
 warning in `open-next.config.ts`). No `--remote`. `npm run build` not re-run (Phase 5).
-**Next Steps**: Phase 7 would be preview if a curriculum prompt asks; do not start until asked.
+**Next Steps**: Do not start Phase 8 until asked.

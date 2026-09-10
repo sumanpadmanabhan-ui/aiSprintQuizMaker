@@ -108,6 +108,12 @@ export function McqPreview({ mcqId }: { mcqId: string }) {
 		}
 	}
 
+	function handleTryAgain() {
+		setResult(null);
+		setSelectedChoiceId(null);
+		setSubmitError(null);
+	}
+
 	if (loadError) {
 		return (
 			<div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col gap-4 p-6">
@@ -120,7 +126,7 @@ export function McqPreview({ mcqId }: { mcqId: string }) {
 	}
 
 	if (!mcq) {
-		return <p className="p-6">Loading question…</p>;
+		return <p className="p-6" role="status">Loading question…</p>;
 	}
 
 	return (
@@ -133,11 +139,16 @@ export function McqPreview({ mcqId }: { mcqId: string }) {
 				<CardContent className="flex flex-col gap-6">
 					<p>{mcq.question}</p>
 					{result ? (
-						<p role="status">
-							{result.isCorrect
-								? "Correct"
-								: `Incorrect. The correct choice is ${result.correctChoice.choiceText}.`}
-						</p>
+						<div className="flex flex-col gap-4">
+							<p role="status">
+								{result.isCorrect
+									? "Correct"
+									: `Incorrect. The correct choice is ${result.correctChoice.choiceText}.`}
+							</p>
+							<Button type="button" variant="outline" onClick={handleTryAgain}>
+								Try Again
+							</Button>
+						</div>
 					) : (
 						<form onSubmit={handleSubmit}>
 							<FieldGroup>
