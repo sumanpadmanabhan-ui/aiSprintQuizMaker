@@ -5,7 +5,7 @@ agent conversation, so it describes only what is stable and true of the project.
 
 ## Project
 
-Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. Identity is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is ungated. MCQ Phases 1–5 are done: local D1 tables, `mcq-service`, HTTP `/api/mcqs`, authoring UI that `fetch`es those APIs, and verification (tests, lint, production build). Login/register store `users.id` in `localStorage` as the `createdBy` / attempt `userId` stand-in. Source of truth: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
+Quiz Maker is a greenfield app for teachers who collaborate on a shared multiple-choice test bank. Identity is complete: D1 `users`, hashed-password auth APIs, and shadcn login/register. There is **no session or token**; `/mcqs` is ungated. MCQ Phases 1–6 are done: local D1 tables, `mcq-service`, HTTP `/api/mcqs`, authoring UI, dashboard list verification, and create/edit form UX. Login/register store `users.id` in `localStorage` as the `createdBy` / attempt `userId` stand-in. Source of truth: `ai-workspace/mcq-crud-prd.md`. Identity details live in `ai-workspace/register-login-logout_prd.md`.
 
 ## Stack
 

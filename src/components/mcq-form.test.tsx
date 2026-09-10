@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { McqForm } from "@/components/mcq-form";
+import { McqEdit, McqForm } from "@/components/mcq-form";
 import { setCurrentUserId } from "@/lib/current-user";
 
 vi.mock("next/navigation", () => ({
@@ -100,5 +100,98 @@ describe("McqForm", () => {
 		expect(url).toBe("/api/mcqs/mcq-1");
 		expect(options.method).toBe("PUT");
 		await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/mcqs"));
+	});
+
+	it("renders New Question with description, add/remove, save, and cancel", async () => {
+		render(<McqForm />);
+
+		expect(screen.getByRole("heading", { name: /new question/i })).toBeTruthy();
+		expect(screen.getByLabelText(/^description$/i)).toBeTruthy();
+		expect(screen.getByRole("button", { name: /add choice/i })).toBeTruthy();
+		expect(screen.getByRole("button", { name: /remove choice 1/i })).toHaveProperty("disabled", true);
+		expect(screen.getByRole("link", { name: /^cancel$/i }).getAttribute("href")).toBe("/mcqs");
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole("button", { name: /add choice/i }));
+		expect(screen.getByLabelText(/^choice 3$/i)).toBeTruthy();
+		expect(screen.getByRole("button", { name: /remove choice 3/i })).toHaveProperty("disabled", false);
+		await user.click(screen.getByRole("button", { name: /remove choice 3/i }));
+		expect(screen.queryByLabelText(/^choice 3$/i)).toBeNull();
+	});
+
+	it("does not submit when no choice is marked correct", async () => {
+		render(<McqForm />);
+		const user = userEvent.setup();
+		await user.type(screen.getByLabelText(/^title$/i), "Photosynthesis");
+		await user.type(screen.getByLabelText(/^question$/i), "What do plants use to make food?");
+		await user.type(screen.getByLabelText(/^choice 1$/i), "Sunlight");
+		await user.type(screen.getByLabelText(/^choice 2$/i), "Moonlight");
+		await user.click(screen.getByRole("button", { name: /save question/i }));
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect((await screen.findByRole("alert")).textContent).toMatch(/correct/i);
+	});
+
+	it("shows an error and stays on the form when save fails", async () => {
+		fetchMock.mockResolvedValue({
+			ok: false,
+			status: 400,
+			json: async () => ({ error: "Unable to save the question." }),
+		});
+
+		render(<McqForm />);
+		const user = userEvent.setup();
+		await fillValidQuestion(user);
+		await user.click(screen.getByRole("button", { name: /save question/i }));
+
+		expect((await screen.findByRole("alert")).textContent).toMatch(/unable to save/i);
+		expect(pushMock).not.toHaveBeenCalled();
+	});
+
+	it("loads an existing question for edit and shows a loading state first", async () => {
+		let resolveGet: ((value: unknown) => void) | undefined;
+		fetchMock.mockReturnValue(
+			new Promise((resolve) => {
+				resolveGet = resolve;
+			}),
+		);
+
+		render(<McqEdit mcqId="mcq-1" />);
+
+		expect((await screen.findByRole("status")).textContent).toMatch(/loading/i);
+
+		resolveGet?.({
+			ok: true,
+			status: 200,
+			json: async () => ({
+				id: "mcq-1",
+				title: "Photosynthesis",
+				description: "Grade 7",
+				question: "What do plants use to make food?",
+				createdBy: "user-1",
+				choices: [
+					{ choiceText: "Sunlight", isCorrect: true, orderIndex: 0 },
+					{ choiceText: "Moonlight", isCorrect: false, orderIndex: 1 },
+				],
+			}),
+		});
+
+		expect(await screen.findByDisplayValue("Photosynthesis")).toBeTruthy();
+		expect(screen.getByRole("heading", { name: /edit question/i })).toBeTruthy();
+		expect(screen.getByDisplayValue("Grade 7")).toBeTruthy();
+		expect(screen.queryByRole("status")).toBeNull();
+	});
+
+	it("shows an error when the question to edit cannot be loaded", async () => {
+		fetchMock.mockResolvedValue({
+			ok: false,
+			status: 404,
+			json: async () => ({ error: "MCQ not found." }),
+		});
+
+		render(<McqEdit mcqId="missing" />);
+
+		expect((await screen.findByRole("alert")).textContent).toMatch(/not found/i);
+		expect(screen.queryByRole("button", { name: /save question/i })).toBeNull();
 	});
 });

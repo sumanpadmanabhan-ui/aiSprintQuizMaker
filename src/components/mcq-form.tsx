@@ -9,7 +9,6 @@ import {
 	CardContent,
 	CardDescription,
 	CardHeader,
-	CardTitle,
 } from "@/components/ui/card";
 import {
 	Field,
@@ -202,7 +201,9 @@ export function McqForm({ mcqId, initialMcq }: McqFormProps) {
 		<div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col gap-6 p-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>{isEdit ? "Edit question" : "Create question"}</CardTitle>
+					<h1 className="font-heading text-base leading-snug font-medium">
+						{isEdit ? "Edit Question" : "New Question"}
+					</h1>
 					<CardDescription>
 						Title, question stem, and 2–6 choices with exactly one correct answer.
 					</CardDescription>
@@ -320,14 +321,12 @@ export function McqForm({ mcqId, initialMcq }: McqFormProps) {
 							</Field>
 							<Field>
 								<Button type="submit" disabled={submitting}>
-									Save question
+									{submitting ? "Saving question…" : "Save question"}
 								</Button>
+								<Link href="/mcqs" className={buttonVariants({ variant: "outline" })}>
+									Cancel
+								</Link>
 								<FieldError errors={formError ? [{ message: formError }] : undefined} />
-								<FieldDescription>
-									<Link href="/mcqs" className={buttonVariants({ variant: "link" })}>
-										Back to questions
-									</Link>
-								</FieldDescription>
 							</Field>
 						</FieldGroup>
 					</form>
@@ -389,7 +388,7 @@ export function McqEdit({ mcqId }: { mcqId: string }) {
 	}
 
 	if (!initialMcq) {
-		return <p className="p-6">Loading question…</p>;
+		return <p className="p-6" role="status">Loading question…</p>;
 	}
 
 	return <McqForm mcqId={mcqId} initialMcq={initialMcq} />;

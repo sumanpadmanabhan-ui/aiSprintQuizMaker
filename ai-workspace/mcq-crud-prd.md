@@ -1,12 +1,12 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-09 (Phase 5 completed)
+Date last modified: 2026-09-10 (Phase 6 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 5 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 6 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. The MCQ sprint is done through verification. Do not convert MCQ
-> CRUD to Server Actions or add Zod.
+> multiple-choice test bank. Do not convert MCQ CRUD to Server Actions or add Zod. Do not
+> start Phase 7 until asked.
 
 ## Overview/Problem
 
@@ -457,6 +457,35 @@ cancelled by `window.confirm`. Isolated run: **3 failed / 4 passed** (link still
 - `npm test`, `npm run lint`, `npm run build` recorded below
 - This PRD updated to COMPLETED for Phase 5
 
+### Phase 6: Create/Edit MCQ - COMPLETED
+
+**Objective**: Finish New Question and Edit Question UX on the existing Phase 4 form.
+Curriculum names this Phase 6; it is not a new stack. Do not redo Phases 1–5. Do not
+start Phase 7 (preview).
+
+**Tests (write first — expect red)**: `src/components/mcq-form.test.tsx` — New Question
+heading, description, add/remove, Cancel → `/mcqs`, no submit without a correct choice,
+save 400 stays on the form, `McqEdit` loading `role="status"` then populated fields, 404
+without Save. Isolated run: **2 failed / 6 passed** (heading was “Create question”, Cancel
+missing, edit loading had no `role="status"`). Add/remove, no-correct, save error, and
+404 were already green.
+
+**What happened**:
+
+1. Create/edit already `fetch`ed `/api/mcqs` from Phase 4. This phase only closed form UX
+   gaps: **New Question** / **Edit Question** headings, **Cancel** to `/mcqs`, Save shows
+   “Saving question…” while submitting, edit load uses `role="status"`.
+2. Existing behavior kept: title/description/question limits, 2–6 choices, exactly one
+   correct radio, add/remove and up/down, `createdBy` from localStorage, POST 201 / PUT 200
+   navigate to `/mcqs`. No cookies. No Zod. No new dependencies.
+3. Isolated form tests: **8 passed**. Full suite: **102 passed / 19 files**. `npm run lint`
+   recorded below. `npm run build` not re-run (Phase 5 already exit 0).
+
+**Deliverables**:
+
+- `src/components/mcq-form.tsx` + `mcq-form.test.tsx` (8 tests)
+- This PRD updated to COMPLETED for Phase 6
+
 ---
 
 ## Technical Implementation Details
@@ -611,18 +640,19 @@ ownership is not changed.
 4. Add implementation details (real filenames, commands, test counts) as they happen.
 5. Cite code as `filepath:line-number`.
 6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP. Phase 4 is
-   authoring UI that `fetch`es those APIs. Do not convert MCQ CRUD to Server Actions; this
-   PRD chose HTTP like auth. Phase 5 is verification only. There is no Phase 6.
+   authoring UI that `fetch`es those APIs. Phase 5 is verification and dashboard list states.
+   Phase 6 is create/edit form UX on that same UI. Do not convert MCQ CRUD to Server Actions.
+   Do not start Phase 7 (preview) until asked.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
 
 ## Current Status
 
-**Last Updated**: 2026-09-09
-**Current Phase**: Phase 5 - Verification — **COMPLETED**
-**Status**: MCQ sprint verified. `/mcqs` is the dashboard list. No Phase 6 in this PRD.
+**Last Updated**: 2026-09-10
+**Current Phase**: Phase 6 - Create/Edit MCQ — **COMPLETED**
+**Status**: New/Edit question form UX complete on `/mcqs/create` and `/mcqs/[id]/edit`.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **97 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
-warning in `open-next.config.ts`). `npm run build` **exit 0**. No `--remote`.
-**Next Steps**: None in this document. Do not start a Phase 6 from a curriculum prompt.
+**Verification**: `npm test` **102 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
+warning in `open-next.config.ts`). No `--remote`. `npm run build` not re-run (Phase 5).
+**Next Steps**: Phase 7 would be preview if a curriculum prompt asks; do not start until asked.
