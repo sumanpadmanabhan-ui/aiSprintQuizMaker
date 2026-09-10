@@ -1,19 +1,20 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-10 (Phase 7 completed)
+Date last modified: 2026-09-10 (Phase 8 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 7 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 8 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. Do not convert MCQ CRUD to Server Actions or add Zod. Do not
-> start Phase 8 until asked.
+> multiple-choice test bank. Do not convert MCQ CRUD to Server Actions or add Zod. There is
+> no Phase 9.
 
 ## Overview/Problem
 
 Teachers can register and log in, and they can author a shared multiple-choice test bank:
 D1 tables, HTTP `/api/mcqs`, and ungated listing/create/edit/preview UI. There is still no
 session. `createdBy` / attempt `userId` come from a `localStorage` stand-in plus an explicit
-Author user ID field. This sprint is complete through Phase 5 verification.
+Author user ID field. This sprint is complete through Phase 8 (quality, documentation, and
+final verification).
 
 ---
 
@@ -230,23 +231,31 @@ Use existing shadcn: `button`, `card`, `dialog`, `field`, `input`, `label`, `sep
 
 #### Listing (`/mcqs`)
 
-- Title "Multiple Choice Questions", Create control, table of title / description / question
-  (truncated), created date, actions (Edit, Delete with confirm, Preview).
-- Search box and pagination. Empty state when there are no rows.
+- Title "Multiple Choice Questions" as an `h1` (shadcn `CardTitle` is a `div` and has no
+  heading role). Create Question → `/mcqs/create`. Table of title / description / question
+  (truncated), created date, actions (Edit, Delete with `window.confirm`, Preview). Row
+  actions use unique `aria-label`s that include the question title.
+- Search box and pagination. Loading uses `role="status"`. Distinct empty vs error states.
 - Keep a logout control on this page (identity contract).
 
 #### Create (`/mcqs/create`) and Edit (`/mcqs/[id]/edit`)
 
+- Headings **New Question** / **Edit Question** as `h1`. Cancel links to `/mcqs`. Save shows
+  “Saving question…” while submitting. Edit load uses `role="status"`; 404 does not show Save.
 - Title required, max 200. Description optional, max 500. Question required, max 1000.
 - Choices: 2–6 rows, each with text + exactly one "correct" radio. Add/remove and up/down
   reorder. Choice text required.
-- Submit via `fetch` to the APIs above. `createdBy` must be supplied somehow without a session
-  (Phase 3 decides the UX; do not add cookies). Navigate to `/mcqs` on success.
+- Submit via `fetch` to the APIs above. An **Author user ID** field (prefilled from
+  `localStorage` `quiz-maker-user-id`) supplies `createdBy`. That is attribution, not
+  authorization. Do not add cookies. Navigate to `/mcqs` on success.
 
 #### Preview (`/mcqs/[id]/preview`)
 
-- Show title, description, question, radio choices. Submit records an attempt and shows
-  correct/incorrect plus the correct choice. Link back to `/mcqs`.
+- Title as `h1`, plus description, question, and radio choices. Submit is blocked until a
+  choice is selected. POST body is only `{ userId, selectedChoiceId }` — correctness is
+  computed on the server. Feedback uses the attempt response, not GET `choice.isCorrect`.
+- **Try Again** clears feedback and selection and records another attempt. **Back to
+  questions** links to `/mcqs`. Loading uses `role="status"`; 404 does not show Submit.
 
 ### Business rules (service + API)
 
@@ -426,7 +435,7 @@ mock `fetch` and `next/navigation`. Isolated run failed: missing `@/lib/current-
 
 **Objective**: Full suite green; lint and build; dashboard list states; smoke of list/create/
 edit/preview routes. No new product features beyond list UX the verification pass required.
-This repo has **no Phase 6**.
+Curriculum later added Phases 6–8; this phase did not start them.
 
 **Tests (write first — expect red)**: `src/components/mcq-list.test.tsx` — Create Question
 href, Edit/Preview hrefs, loading `role="status"`, list failure without empty state, delete
@@ -511,6 +520,40 @@ Isolated run: **2 failed / 4 passed** (loading had no `role="status"`, no Try Ag
 - `src/components/mcq-preview.tsx` + `mcq-preview.test.tsx` (6 tests)
 - This PRD updated to COMPLETED for Phase 7
 
+### Phase 8: Quality, documentation & final verification - COMPLETED
+
+**Objective**: Review the MCQ feature against this PRD and all acceptance criteria. Run the
+full suite, lint, and build. Verify the complete user flow. Fix bugs, broken flows,
+accessibility issues, or inconsistencies. Align this document with the implementation. Do
+not add product features, dependencies, or scope. There is no Phase 9.
+
+**What happened**:
+
+1. PRD vs code: schema, `mcq-service`, `/api/mcqs`, listing/create/edit/preview UI, and
+   identity stand-in match the agreed layering (Client → `fetch` `/api/mcqs` → route →
+   `mcq-service` → `getDb()`). No cookies, sessions, Zod, or Server Actions. No TEKS or AI.
+2. Accessibility gaps closed without new features: preview title is an `h1` (not
+   `CardTitle`); list Edit/Preview/Delete have unique `aria-label`s that include the title.
+3. `npm test` **106 passed / 19 files**. `npm run lint` **exit 0** (pre-existing warning in
+   `open-next.config.ts`). `npm run build` first failed `EPERM` on `.open-next` because
+   `next dev` / `workerd` still held the folder; after stopping those processes, retry
+   **exit 0** (OpenNext worker at `.open-next/worker.js`).
+4. HTTP smoke on `npm run dev` (`localhost:3000`): `/`, `/login`, `/register`, `/mcqs`,
+   `/mcqs/create`, `/mcqs/dummy/edit`, `/mcqs/dummy/preview` all **200**. `/mcqs` HTML
+   includes the heading, Create Question, logout, search, and loading status. Create HTML
+   includes New Question, Cancel, Save, and Author user ID. Edit/preview SSR HTML is the
+   client loading state (`Loading question…`); controls appear after `fetch`.
+5. End-to-end against local D1 via HTTP (not a browser): register 201 → POST MCQ 201 → list
+   search 200 → GET 200 → attempt 201 (`isCorrect: false`, correct choice Sunlight) → PUT
+   200 (title updated, `createdBy` preserved) → DELETE 204 → GET 404 `"MCQ not found."`.
+   No browser automation was available. No `--remote`. No new dependencies.
+
+**Deliverables**:
+
+- Accessibility consistency on list row actions and preview heading
+- `npm test`, `npm run lint`, `npm run build` recorded below
+- This PRD updated to COMPLETED for Phase 8
+
 ---
 
 ## Technical Implementation Details
@@ -575,7 +618,8 @@ const normalized = row.is_correct === 1;
 - [x] Deleting an MCQ removes its choices and attempts (cascade).
 - [x] No cookies, sessions, or route guards were added.
 - [x] No TEKS or AI generation.
-- [x] `npm test` and `npm run lint` pass; `npm run build` is run in Phase 5, not Phase 1.
+- [x] `npm test` and `npm run lint` pass; `npm run build` is run in Phase 5 and re-run in
+  Phase 8 (not Phase 1).
 
 ---
 
@@ -655,6 +699,35 @@ ownership is not changed.
 **Solution**: Assert the `SET` clause does not assign `created_by`. See
 `src/lib/services/mcq-service.ts` and `src/lib/services/mcq-service.test.ts`.
 
+### `npm run build` EPERM on `.open-next`
+
+**Problem**: OpenNext fails immediately with `EPERM, Permission denied: ...\\.open-next`.
+**Cause**: `next dev` or `workerd` still has the previous build folder open (common if a
+dev server was used for HTTP smoke on the same Windows machine).
+**Solution**: Stop `next dev` and any `workerd` processes, delete `.open-next` if it
+remains, then re-run `npm run build`. Do not overlap `npm test` with `npm run build`.
+
+### `orderIndex` possibly null in `parseChoices`
+
+**Problem**: `npm run build` TypeScript fails on `item.orderIndex` possibly `null`.
+**Cause**: JSON `number | null` is not a valid integer index.
+**Solution**: Treat non-integer / missing / null `orderIndex` as omitted (derive from
+array index). See `src/app/api/mcqs/validation.ts`.
+
+### Page titles are not headings if you use `CardTitle`
+
+**Problem**: Screen readers do not find “New Question”, “Edit Question”, or the preview
+title as headings.
+**Cause**: shadcn `CardTitle` is a `div`.
+**Solution**: Render those titles as `h1`. Keep `CardTitle` for login/register cards.
+
+### Preview / create attempt fails with a database error
+
+**Problem**: Attempt or create returns 500 even though the JSON looks valid.
+**Cause**: `createdBy` / `userId` must be a real `users.id` (FK). A stale `localStorage`
+value after a local DB reset will fail.
+**Solution**: Register or log in again so `quiz-maker-user-id` matches a row in `users`.
+
 ---
 
 ## Notes for AI Agents
@@ -666,8 +739,9 @@ ownership is not changed.
 5. Cite code as `filepath:line-number`.
 6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP. Phase 4 is
    authoring UI that `fetch`es those APIs. Phase 5 is verification and dashboard list states.
-   Phase 6 is create/edit form UX. Phase 7 is preview/attempts UX. Do not convert MCQ CRUD
-   to Server Actions. Do not start Phase 8 until asked.
+   Phase 6 is create/edit form UX. Phase 7 is preview/attempts UX. Phase 8 is quality,
+   documentation, and final verification. Do not convert MCQ CRUD to Server Actions. There
+   is no Phase 9.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -675,9 +749,11 @@ ownership is not changed.
 ## Current Status
 
 **Last Updated**: 2026-09-10
-**Current Phase**: Phase 7 - Preview & Attempts — **COMPLETED**
-**Status**: Preview records attempts server-side; Try Again and Back are in place.
+**Current Phase**: Phase 8 - Quality, documentation & final verification — **COMPLETED**
+**Status**: MCQ sprint verified against this PRD. Waiting for review.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **106 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
-warning in `open-next.config.ts`). No `--remote`. `npm run build` not re-run (Phase 5).
-**Next Steps**: Do not start Phase 8 until asked.
+**Verification**: `npm test` **106 passed / 19 files**. `npm run lint` **exit 0**
+(pre-existing warning in `open-next.config.ts`). `npm run build` **exit 0** (OpenNext
+worker at `.open-next/worker.js`). HTTP smoke 200 on authoring/auth routes. HTTP E2E
+register → create → list → attempt → update → delete → 404. No `--remote`.
+**Next Steps**: Wait for review. Do not start a Phase 9.

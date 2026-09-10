@@ -48,13 +48,13 @@ describe("McqList", () => {
 		expect(screen.getByRole("link", { name: /create question/i }).getAttribute("href")).toBe(
 			"/mcqs/create",
 		);
-		expect(screen.getByRole("link", { name: /^edit$/i }).getAttribute("href")).toBe(
+		expect(screen.getByRole("link", { name: /edit photosynthesis/i }).getAttribute("href")).toBe(
 			"/mcqs/mcq-1/edit",
 		);
-		expect(screen.getByRole("link", { name: /preview/i }).getAttribute("href")).toBe(
+		expect(screen.getByRole("link", { name: /preview photosynthesis/i }).getAttribute("href")).toBe(
 			"/mcqs/mcq-1/preview",
 		);
-		expect(screen.getByRole("button", { name: /delete/i })).toBeTruthy();
+		expect(screen.getByRole("button", { name: /delete photosynthesis/i })).toBeTruthy();
 		expect(screen.getByRole("button", { name: /log out/i })).toBeTruthy();
 		expect(fetchMock).toHaveBeenCalledWith("/api/mcqs?page=1&limit=10");
 	});

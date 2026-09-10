@@ -173,12 +173,14 @@ export function McqList() {
 										<Link
 											href={`/mcqs/${mcq.id}/edit`}
 											className={buttonVariants({ variant: "outline", size: "sm" })}
+											aria-label={`Edit ${mcq.title}`}
 										>
 											Edit
 										</Link>
 										<Link
 											href={`/mcqs/${mcq.id}/preview`}
 											className={buttonVariants({ variant: "outline", size: "sm" })}
+											aria-label={`Preview ${mcq.title}`}
 										>
 											Preview
 										</Link>
@@ -186,6 +188,7 @@ export function McqList() {
 											type="button"
 											variant="destructive"
 											size="sm"
+											aria-label={`Delete ${mcq.title}`}
 											onClick={() => void handleDelete(mcq.id)}
 										>
 											Delete

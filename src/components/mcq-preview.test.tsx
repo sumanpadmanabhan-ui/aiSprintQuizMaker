@@ -87,7 +87,7 @@ describe("McqPreview", () => {
 		});
 
 		expect(await screen.findByText("What do plants use to make food?")).toBeTruthy();
-		expect(screen.getByText("Photosynthesis")).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Photosynthesis" })).toBeTruthy();
 		expect(screen.getByText("Grade 7 life science")).toBeTruthy();
 		expect(screen.getByRole("link", { name: /back/i }).getAttribute("href")).toBe("/mcqs");
 	});

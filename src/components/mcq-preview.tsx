@@ -8,7 +8,6 @@ import {
 	CardContent,
 	CardDescription,
 	CardHeader,
-	CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -133,7 +132,7 @@ export function McqPreview({ mcqId }: { mcqId: string }) {
 		<div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col gap-6 p-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>{mcq.title}</CardTitle>
+					<h1 className="font-heading text-base leading-snug font-medium">{mcq.title}</h1>
 					{mcq.description ? <CardDescription>{mcq.description}</CardDescription> : null}
 				</CardHeader>
 				<CardContent className="flex flex-col gap-6">
