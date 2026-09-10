@@ -69,7 +69,7 @@ export function McqList() {
 					return;
 				}
 				if (response.status !== 200) {
-					setError(json.error ?? "Unable to load questions.");
+					setError("Unable to load questions.");
 					setMcqs([]);
 					setLoading(false);
 					return;
@@ -117,7 +117,7 @@ export function McqList() {
 		}
 	}
 
-	const empty = !loading && mcqs.length === 0;
+	const empty = !loading && !error && mcqs.length === 0;
 
 	return (
 		<div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 p-6">
@@ -125,7 +125,7 @@ export function McqList() {
 				<h1 className="text-2xl font-semibold">Multiple Choice Questions</h1>
 				<div className="flex flex-wrap items-center gap-3">
 					<Link href="/mcqs/create" className={buttonVariants()}>
-						Create
+						Create Question
 					</Link>
 					<LogoutButton />
 				</div>
@@ -146,7 +146,9 @@ export function McqList() {
 
 			<FieldError errors={error ? [{ message: error }] : undefined} />
 
-			{empty ? (
+			{loading ? (
+				<p role="status">Loading questions…</p>
+			) : error ? null : empty ? (
 				<p>No questions yet. Create one to start the shared test bank.</p>
 			) : (
 				<Table>
@@ -196,7 +198,7 @@ export function McqList() {
 				</Table>
 			)}
 
-			{pagination.pages > 1 ? (
+			{!loading && !error && pagination.pages > 1 ? (
 				<div className="flex items-center gap-3">
 					<Button
 						type="button"

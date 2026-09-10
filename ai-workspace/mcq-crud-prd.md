@@ -1,20 +1,19 @@
 Date created: 2026-09-09
-Date last modified: 2026-09-09 (Phase 3 completed)
+Date last modified: 2026-09-09 (Phase 5 completed)
 
 # MCQ CRUD - Technical PRD
 
-> **Sprint status:** Phase 4 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
+> **Sprint status:** Phase 5 COMPLETED. Identity (`ai-workspace/register-login-logout_prd.md`)
 > is complete and must not be reopened. This document is the source of truth for the shared
-> multiple-choice test bank. Implement one phase at a time, test-first. Do not start Phase 5
-> until asked. Do not convert MCQ CRUD to Server Actions or add Zod.
+> multiple-choice test bank. The MCQ sprint is done through verification. Do not convert MCQ
+> CRUD to Server Actions or add Zod.
 
 ## Overview/Problem
 
-Teachers can register and log in, and they can now author a shared multiple-choice test
-bank: D1 tables, HTTP `/api/mcqs`, and ungated listing/create/edit/preview UI. There is
-still no session. `createdBy` / attempt `userId` come from a `localStorage` stand-in plus an
-explicit Author user ID field. Remaining work is Phase 5 verification (full build + browser
-smoke), not new features.
+Teachers can register and log in, and they can author a shared multiple-choice test bank:
+D1 tables, HTTP `/api/mcqs`, and ungated listing/create/edit/preview UI. There is still no
+session. `createdBy` / attempt `userId` come from a `localStorage` stand-in plus an explicit
+Author user ID field. This sprint is complete through Phase 5 verification.
 
 ---
 
@@ -423,10 +422,40 @@ mock `fetch` and `next/navigation`. Isolated run failed: missing `@/lib/current-
 - Login/register persist the user id; logout clears it
 - This PRD updated to COMPLETED for Phase 4
 
-### Phase 5: Verification - PLANNED
+### Phase 5: Verification - COMPLETED
 
-**Objective**: Full suite green; lint and build; browser smoke of create → list → preview →
-edit → delete. No new features.
+**Objective**: Full suite green; lint and build; dashboard list states; smoke of list/create/
+edit/preview routes. No new product features beyond list UX the verification pass required.
+This repo has **no Phase 6**.
+
+**Tests (write first — expect red)**: `src/components/mcq-list.test.tsx` — Create Question
+href, Edit/Preview hrefs, loading `role="status"`, list failure without empty state, delete
+cancelled by `window.confirm`. Isolated run: **3 failed / 4 passed** (link still said
+“Create”, no loading status, 500 body shown as empty-capable error).
+
+**What happened**:
+
+1. Curriculum “Dashboard MCQ List” is this PRD’s `/mcqs` listing, not a new route. Login/
+   register still store `users.id` in `localStorage`; logout still clears it. No cookies.
+2. List UX gaps closed without redoing Phases 1–4: **Create Question** → `/mcqs/create`,
+   visible loading, distinct empty vs error, cancel-delete. Existing table and row actions
+   stayed in place.
+3. `npm run build` first failed TypeScript: `item.orderIndex` possibly `null` in
+   `src/app/api/mcqs/validation.ts`. Narrowed that check; retry **succeeded**.
+4. Isolated list tests: **7 passed**. Full suite: **97 passed / 19 files**. `npm run lint`
+   exit 0 (pre-existing `open-next.config.ts` warning). `npm run build` **exit 0** (OpenNext
+   worker at `.open-next/worker.js`). No new dependencies. `--remote` not used.
+5. HTTP smoke on `npm run dev` (`localhost:3000`): `/mcqs`, `/mcqs/create`, `/login`,
+   `/mcqs/dummy/edit`, `/mcqs/dummy/preview` all **200**. `/mcqs` HTML includes the heading,
+   Create Question, logout, search, and loading status. No browser automation was available;
+   Node `next dev` cannot exercise Workers/D1, so create → preview → edit → delete against
+   real D1 was not clicked in a browser.
+
+**Deliverables**:
+
+- Dashboard list loading/empty/error + Create Question (McqList tests 7)
+- `npm test`, `npm run lint`, `npm run build` recorded below
+- This PRD updated to COMPLETED for Phase 5
 
 ---
 
@@ -492,7 +521,7 @@ const normalized = row.is_correct === 1;
 - [x] Deleting an MCQ removes its choices and attempts (cascade).
 - [x] No cookies, sessions, or route guards were added.
 - [x] No TEKS or AI generation.
-- [ ] `npm test` and `npm run lint` pass; `npm run build` is run in Phase 5, not Phase 1.
+- [x] `npm test` and `npm run lint` pass; `npm run build` is run in Phase 5, not Phase 1.
 
 ---
 
@@ -583,7 +612,7 @@ ownership is not changed.
 5. Cite code as `filepath:line-number`.
 6. Phase 1 is schema only. Phase 2 is `mcq-service`. Phase 3 is `/api/mcqs` HTTP. Phase 4 is
    authoring UI that `fetch`es those APIs. Do not convert MCQ CRUD to Server Actions; this
-   PRD chose HTTP like auth. Phase 5 is verification only.
+   PRD chose HTTP like auth. Phase 5 is verification only. There is no Phase 6.
 7. Ask before adding a dependency or a shadcn component that is not already installed.
 
 ---
@@ -591,10 +620,9 @@ ownership is not changed.
 ## Current Status
 
 **Last Updated**: 2026-09-09
-**Current Phase**: Phase 4 - Authoring UI — **COMPLETED**
-**Status**: Listing, create, edit, delete, and preview UI in place. `/mcqs` is no longer a stub.
+**Current Phase**: Phase 5 - Verification — **COMPLETED**
+**Status**: MCQ sprint verified. `/mcqs` is the dashboard list. No Phase 6 in this PRD.
 **Branch**: `feature/mcq-crud`
-**Verification**: `npm test` **94 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
-warning in `open-next.config.ts`, unrelated). No `--remote`. `npm run build` not run (Phase 5).
-**Next Steps**: Phase 5 — verification (full suite, lint, build, browser smoke). Do not start
-Phase 5 until asked.
+**Verification**: `npm test` **97 passed / 19 files**. `npm run lint` **exit 0** (pre-existing
+warning in `open-next.config.ts`). `npm run build` **exit 0**. No `--remote`.
+**Next Steps**: None in this document. Do not start a Phase 6 from a curriculum prompt.

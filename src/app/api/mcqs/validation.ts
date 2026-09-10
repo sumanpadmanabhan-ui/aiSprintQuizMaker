@@ -86,13 +86,18 @@ function parseChoices(value: unknown): McqChoiceInput[] {
 		if (typeof item.isCorrect !== "boolean") {
 			throw new RequestValidationError("isCorrect must be a boolean.");
 		}
-		if (item.orderIndex !== undefined && (!Number.isInteger(item.orderIndex) || item.orderIndex < 0)) {
+		const rawOrderIndex = item.orderIndex;
+		if (
+			rawOrderIndex !== undefined &&
+			rawOrderIndex !== null &&
+			(typeof rawOrderIndex !== "number" || !Number.isInteger(rawOrderIndex) || rawOrderIndex < 0)
+		) {
 			throw new RequestValidationError("orderIndex must be a non-negative integer.");
 		}
 		return {
 			choiceText,
 			isCorrect: item.isCorrect,
-			orderIndex: item.orderIndex ?? index,
+			orderIndex: typeof rawOrderIndex === "number" ? rawOrderIndex : index,
 		};
 	});
 
